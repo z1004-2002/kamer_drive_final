@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:kamer_drive_final/core/routes/app_router.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -7,21 +8,24 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MainApp());
+  runApp(const KamerDriveApp());
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class KamerDriveApp extends StatelessWidget {
+  const KamerDriveApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    // Utilisation de MaterialApp.router
+    return MaterialApp.router(
+      title: 'KamerDrive',
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
+      theme: ThemeData(
+        primaryColor: const Color(0xFF009688), 
+        scaffoldBackgroundColor: const Color(0xFFF5F6F8),
       ),
+      // On passe la configuration de GoRouter
+      routerConfig: AppRouter.router,
     );
   }
 }
