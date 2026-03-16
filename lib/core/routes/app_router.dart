@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kamer_drive_final/features/auth/screen/auth_screen.dart';
 
 // Importe tes écrans actuels
 import '../../features/onboarding/screens/splash_screen.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
 
-// Importe tes futurs écrans (à décommenter plus tard)
-// import '../../features/auth/screens/login_screen.dart';
-// import '../../features/home/screens/main_screen.dart';
 
 class AppRouter {
   // Définition du routeur
@@ -35,13 +33,13 @@ class AppRouter {
       ),
 
       // 3. Auth Screen (Placeholder pour la suite)
-      /*
+      
       GoRoute(
         path: '/auth',
         name: 'auth',
-        builder: (context, state) => const LoginScreen(),
+        builder: (context, state) => const AuthScreen(),
       ),
-      */
+      
 
       // 4. Main Home Screen (Placeholder pour la suite)
       /*
