@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
+import 'package:kamer_drive_final/shared/widgets/logo.dart';
 import 'package:kamer_drive_final/shared/widgets/name.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -59,27 +60,31 @@ class _SplashScreenState extends State<SplashScreen> {
 
           // Contenu Central
           Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Container(
-                  color: Colors.white,
-                  child: Image.asset(
-                    'assets/images/logo/logo.png',
-                    width: size.width * 0.5,
-                  ),
-                ),
-                Name(size: 30),
-                Container(
-                  color: Colors.white,
-                  child: CupertinoActivityIndicator(
-                    animating: true,
-                    radius: size.width * 0.05,
-                    color: kPrimaryColor,
-                  ),
-                ),
-              ],
+            child: KamerDriveLogo(
+              size: 100, // Très grand
+              showText: true,
             ),
+            // Column(
+            //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            //   children: [
+            //     Container(
+            //       color: Colors.white,
+            //       child: Image.asset(
+            //         'assets/images/logo/logo.png',
+            //         width: size.width * 0.5,
+            //       ),
+            //     ),
+            //     Name(size: 30),
+            //     Container(
+            //       color: Colors.white,
+            //       child: CupertinoActivityIndicator(
+            //         animating: true,
+            //         radius: size.width * 0.05,
+            //         color: kPrimaryColor,
+            //       ),
+            //     ),
+            //   ],
+            // ),
           ),
         ],
       ),

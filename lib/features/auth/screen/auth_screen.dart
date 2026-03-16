@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
 import 'package:kamer_drive_final/core/utils/snackbar_utils.dart';
 import 'package:kamer_drive_final/shared/widgets/button.dart';
+import 'package:kamer_drive_final/shared/widgets/logo.dart';
 import 'package:kamer_drive_final/shared/widgets/name.dart';
 import 'package:kamer_drive_final/shared/widgets/textfield.dart';
 
@@ -59,15 +60,15 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
             ),
             
-            // --- LOGO EN FOND ---
-            Positioned(
-              bottom: size.height * 0.5,
-              child: Column(
-                children: [
-                  Opacity(opacity: 0.15, child: Name(size: size.width * 0.16)),
-                ],
-              ),
-            ),
+            // // --- LOGO EN FOND ---
+            // Positioned(
+            //   bottom: size.height * 0.5,
+            //   child: Column(
+            //     children: [
+            //       Opacity(opacity: 0.15, child: Name(size: size.width * 0.16)),
+            //     ],
+            //   ),
+            // ),
 
             // --- ANIMATION ENTRE CONNEXION ET INSCRIPTION ---
             SafeArea(
@@ -146,7 +147,11 @@ class _LoginFormState extends State<LoginForm> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Name(size: 35), // Logo officiel
+            KamerDriveLogo(
+              size: 70, // Très grand
+              showText: false,
+            ),
+            // const Name(size: 35), // Logo officiel
             const SizedBox(height: 10),
             const Text(
               "Heureux de vous revoir !",
