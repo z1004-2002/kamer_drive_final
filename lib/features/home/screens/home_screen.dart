@@ -198,12 +198,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildFixedHeader(String userName) {
     // On force la hauteur globale du header à 215 (190 de fond vert + 25 de barre de recherche)
     return SizedBox(
-      height: 155,
+      height: 195,
       child: Stack(
         children: [
           // Le fond dégradé vert (Hauteur de 190)
           Container(
-            height: 130,
+            height: 170,
             width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(

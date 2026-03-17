@@ -47,30 +47,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyD2SnVvly9D6txy-RdY6ZzYZRmIzk4VVKg',
-    appId: '1:767758392521:web:3c1752204d41f187fd4118',
-    messagingSenderId: '767758392521',
-    projectId: 'kamer-drive-29b2b',
-    authDomain: 'kamer-drive-29b2b.firebaseapp.com',
-    storageBucket: 'kamer-drive-29b2b.firebasestorage.app',
-    measurementId: 'G-02YBWPFHH7',
+    apiKey: 'AIzaSyC2VeOb2PH6DIakmOTRFIyGnspNRww7XyE',
+    appId: '1:202489626299:web:712d5901b9f031bd36b39e',
+    messagingSenderId: '202489626299',
+    projectId: 'kamer-drive-41b9b',
+    authDomain: 'kamer-drive-41b9b.firebaseapp.com',
+    storageBucket: 'kamer-drive-41b9b.firebasestorage.app',
+    measurementId: 'G-5ZSV8JQD2W',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBKmbaOn8SQWDNd9W3fap6gSrSLFyKnTco',
-    appId: '1:767758392521:android:9ce7b7569145bafffd4118',
-    messagingSenderId: '767758392521',
-    projectId: 'kamer-drive-29b2b',
-    storageBucket: 'kamer-drive-29b2b.firebasestorage.app',
+    apiKey: 'AIzaSyCj-8NtzOTSyK8bwUUXlViXwQ9UzglzD5M',
+    appId: '1:202489626299:android:a88481d486537d3636b39e',
+    messagingSenderId: '202489626299',
+    projectId: 'kamer-drive-41b9b',
+    storageBucket: 'kamer-drive-41b9b.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyA6gb-LqoaSsgf1O1PHABp4TMJLQ5Vu3_8',
-    appId: '1:767758392521:ios:e32385c11388efaffd4118',
-    messagingSenderId: '767758392521',
-    projectId: 'kamer-drive-29b2b',
-    storageBucket: 'kamer-drive-29b2b.firebasestorage.app',
+    apiKey: 'AIzaSyA7Cy0X-HvlfYdkWPIHiNrLL2jCpRMA2u8',
+    appId: '1:202489626299:ios:37b0aef5f5252c8736b39e',
+    messagingSenderId: '202489626299',
+    projectId: 'kamer-drive-41b9b',
+    storageBucket: 'kamer-drive-41b9b.firebasestorage.app',
     iosBundleId: 'com.example.kamerDriveFinal',
   );
-
 }

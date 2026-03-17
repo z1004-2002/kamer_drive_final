@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "767758392521",
-    "project_id": "kamer-drive-29b2b",
-    "storage_bucket": "kamer-drive-29b2b.firebasestorage.app"
+    "project_number": "202489626299",
+    "project_id": "kamer-drive-41b9b",
+    "storage_bucket": "kamer-drive-41b9b.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:767758392521:android:9ce7b7569145bafffd4118",
+        "mobilesdk_app_id": "1:202489626299:android:a88481d486537d3636b39e",
         "android_client_info": {
           "package_name": "com.example.kamer_drive_final"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBKmbaOn8SQWDNd9W3fap6gSrSLFyKnTco"
+          "current_key": "AIzaSyCj-8NtzOTSyK8bwUUXlViXwQ9UzglzD5M"
         }
       ],
       "services": {

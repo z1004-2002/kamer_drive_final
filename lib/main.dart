@@ -7,14 +7,10 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(
     MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-      ],
+      providers: [ChangeNotifierProvider(create: (_) => AuthProvider())],
       child: const KamerDriveApp(),
     ),
   );
@@ -30,7 +26,7 @@ class KamerDriveApp extends StatelessWidget {
       title: 'KamerDrive',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: const Color(0xFF009688), 
+        primaryColor: const Color(0xFF009688),
         scaffoldBackgroundColor: const Color(0xFFF5F6F8),
       ),
       // On passe la configuration de GoRouter
