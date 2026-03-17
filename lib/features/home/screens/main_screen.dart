@@ -79,8 +79,7 @@ class _MainScreenState extends State<MainScreen> {
           shape: const CircleBorder(), // Parfaitement rond
           onPressed: () {
             // Navigation vers l'ajout de véhicule (Vente/Location)
-            // context.push('/my_listings');
-            print("Ouvrir l'ajout de véhicule");
+            context.push('/my_listings');
           },
           child: const Icon(Icons.add, size: 35, color: Colors.white),
         ),

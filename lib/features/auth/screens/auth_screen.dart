@@ -104,7 +104,7 @@ class _AuthScreenState extends State<AuthScreen> {
 // =========================================================================
 class LoginForm extends StatefulWidget {
   final VoidCallback onSwitch;
-  const LoginForm({Key? key, required this.onSwitch}) : super(key: key);
+  const LoginForm({super.key, required this.onSwitch});
 
   @override
   State<LoginForm> createState() => _LoginFormState();
@@ -151,7 +151,7 @@ class _LoginFormState extends State<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
+    // Size size = MediaQuery.of(context).size;
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 30),
@@ -239,7 +239,7 @@ class _LoginFormState extends State<LoginForm> {
 // =========================================================================
 class SignupForm extends StatefulWidget {
   final VoidCallback onSwitch;
-  const SignupForm({Key? key, required this.onSwitch}) : super(key: key);
+  const SignupForm({super.key, required this.onSwitch});
 
   @override
   State<SignupForm> createState() => _SignupFormState();

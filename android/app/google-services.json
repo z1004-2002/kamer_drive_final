@@ -1,43 +1,26 @@
 {
   "project_info": {
-    "project_number": "144439760990",
-    "project_id": "kamer-drive",
-    "storage_bucket": "kamer-drive.firebasestorage.app"
+    "project_number": "767758392521",
+    "project_id": "kamer-drive-29b2b",
+    "storage_bucket": "kamer-drive-29b2b.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:144439760990:android:5a582f442dba1d3b247ccf",
+        "mobilesdk_app_id": "1:767758392521:android:9ce7b7569145bafffd4118",
         "android_client_info": {
           "package_name": "com.example.kamer_drive_final"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "144439760990-ksvdc14r4f8g45v1b7ui6iu4c95lunvd.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyD9xwScjB3Q1KnHvdpi5U-6-iGX-cZDKiA"
+          "current_key": "AIzaSyBKmbaOn8SQWDNd9W3fap6gSrSLFyKnTco"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "144439760990-ksvdc14r4f8g45v1b7ui6iu4c95lunvd.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "144439760990-0t4vvjoig5i0ar8vrfeegth35rhf8u7g.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.kamerDriveFinal"
-              }
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

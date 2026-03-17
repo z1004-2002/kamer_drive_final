@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kamer_drive_final/features/auth/screens/auth_screen.dart';
 import 'package:kamer_drive_final/features/home/screens/main_screen.dart';
+import 'package:kamer_drive_final/features/my_listings/screens/add_vehicle_screen.dart';
+import 'package:kamer_drive_final/features/my_listings/screens/my_listings_screen.dart';
 import 'package:kamer_drive_final/features/onboarding/screens/profiling_screen.dart';
 
 // Importe tes écrans actuels
@@ -34,7 +36,7 @@ class AppRouter {
         builder: (context, state) => const OnboardingScreen(),
       ),
 
-      // 3. Auth Screen (Placeholder pour la suite)
+      // 3. Auth Screen 
       
       GoRoute(
         path: '/auth',
@@ -42,19 +44,33 @@ class AppRouter {
         builder: (context, state) => const AuthScreen(),
       ),
 
-      // 4. Profiling Screen (Placeholder pour la suite)
+      // 4. Profiling Screen 
       GoRoute(
         path: '/profiling',
         name: 'profiling',
         builder: (context, state) => const ProfilingScreen(),
       ),
 
-      // 5. Main Home Screen (Placeholder pour la suite)
+      // 5. Main Home Screen 
       
       GoRoute(
         path: '/home',
         name: 'home',
         builder: (context, state) => const MainScreen(),
+      ),
+
+      // 6. My Listings & Add Vehicle Screens
+      GoRoute(
+        path: '/my_listings',
+        name: 'my_listings',
+        builder: (context, state) => const MyListingsScreen(),
+      ),
+
+      // 7. Add Vehicle Screen
+      GoRoute(
+        path: '/add_vehicle',
+        name: 'add_vehicle',
+        builder: (context, state) => const AddVehicleScreen(),
       ),
       
     ],

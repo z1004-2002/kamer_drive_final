@@ -19,7 +19,7 @@ class KamerDriveLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Couleurs par défaut si non spécifiées
-    final iconColor = color ?? kPrimaryColor;
+    // final iconColor = color ?? kPrimaryColor;
     final finalTextColor = textColor ?? kPrimaryColor;
 
     return Column(
