@@ -1,4 +1,4 @@
-import 'package:kamer_drive_final/models/review_model.dart';
+import 'review_model.dart'; // N'oublie pas cet import
 
 class UserModel {
   final String id;
@@ -7,10 +7,18 @@ class UserModel {
   final String email;
   final String phone;
   final String avatarUrl;
+  
+  // Infos Sécurité / Vérification
   final String address;
-  final List<String> idDocuments; // URLs des pièces d'identité (CNI, Passeport...)
-  final List<String>? proofOfAddress; // URLs des justificatifs (Facture ENEO, etc.) - Optionnel
-  final List<ReviewModel> reviews; // Liste des ratings avec commentaires
+  final List<String> idDocuments;
+  final List<String>? proofOfAddress;
+  final List<ReviewModel> reviews;
+
+  // --- NOUVEAUX CHAMPS DE PROFILAGE ---
+  final bool isFirstConnection;
+  final bool hasCompletedProfiling;
+  final List<String> intents;
+  final bool ownsVehicle;
 
   final DateTime createdAt;
 
@@ -25,6 +33,10 @@ class UserModel {
     required this.idDocuments,
     this.proofOfAddress,
     required this.reviews,
+    required this.isFirstConnection,
+    required this.hasCompletedProfiling,
+    required this.intents,
+    required this.ownsVehicle,
     required this.createdAt,
   });
 
@@ -42,6 +54,11 @@ class UserModel {
       reviews: (json['reviews'] as List<dynamic>?)
               ?.map((e) => ReviewModel.fromJson(e))
               .toList() ?? [],
+      
+      isFirstConnection: json['isFirstConnection'] ?? true,
+      hasCompletedProfiling: json['hasCompletedProfiling'] ?? false,
+      intents: List<String>.from(json['intents'] ?? []),
+      ownsVehicle: json['ownsVehicle'] ?? false,
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
     );
   }
@@ -58,6 +75,11 @@ class UserModel {
       'idDocuments': idDocuments,
       'proofOfAddress': proofOfAddress,
       'reviews': reviews.map((e) => e.toJson()).toList(),
+ 
+      'isFirstConnection': isFirstConnection,
+      'hasCompletedProfiling': hasCompletedProfiling,
+      'intents': intents,
+      'ownsVehicle': ownsVehicle,
       'createdAt': createdAt.toIso8601String(),
     };
   }

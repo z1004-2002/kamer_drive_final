@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kamer_drive_final/features/auth/screen/auth_screen.dart';
+import 'package:kamer_drive_final/features/onboarding/screens/profiling_screen.dart';
 
 // Importe tes écrans actuels
 import '../../features/onboarding/screens/splash_screen.dart';
@@ -39,9 +40,15 @@ class AppRouter {
         name: 'auth',
         builder: (context, state) => const AuthScreen(),
       ),
-      
 
-      // 4. Main Home Screen (Placeholder pour la suite)
+      // 4. Profiling Screen (Placeholder pour la suite)
+      GoRoute(
+        path: '/profiling',
+        name: 'profiling',
+        builder: (context, state) => const ProfilingScreen(),
+      ),
+
+      // 5. Main Home Screen (Placeholder pour la suite)
       /*
       GoRoute(
         path: '/home',

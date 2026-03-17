@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
 import 'package:kamer_drive_final/core/utils/snackbar_utils.dart';
+import 'package:kamer_drive_final/features/auth/providers/auth_provider.dart';
+import 'package:kamer_drive_final/models/auth_model.dart';
 import 'package:kamer_drive_final/shared/widgets/button.dart';
 import 'package:kamer_drive_final/shared/widgets/logo.dart';
 import 'package:kamer_drive_final/shared/widgets/name.dart';
 import 'package:kamer_drive_final/shared/widgets/textfield.dart';
+import 'package:provider/provider.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -59,7 +63,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               ),
             ),
-            
+
             // // --- LOGO EN FOND ---
             // Positioned(
             //   bottom: size.height * 0.5,
@@ -111,11 +115,8 @@ class _LoginFormState extends State<LoginForm> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  Future<void> _submitLogin() async {
-    final email = _emailController.text.trim();
-    final pass = _passwordController.text.trim();
-
-    if (email.isEmpty || pass.isEmpty) {
+ Future<void> _submitLogin() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       SnackbarUtils.showWarning(context, "Veuillez remplir tous les champs.");
       return;
     }
@@ -123,15 +124,26 @@ class _LoginFormState extends State<LoginForm> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Firebase Auth Logique ici
-      await Future.delayed(const Duration(seconds: 2)); // Simulation
+      final loginData = LoginModel(
+        emailOrPhone: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      // On récupère le résultat de la fonction login (isFirstConnection)
+      bool needsProfiling = await Provider.of<AuthProvider>(context, listen: false).login(loginData);
 
       if (mounted) {
         SnackbarUtils.showSuccess(context, "Connexion réussie !");
-        // context.go('/home'); // Redirection vers l'accueil
+        
+        // REDIRECTION INTELLIGENTE
+        if (needsProfiling) {
+          context.go('/profiling'); // Il n'a pas fini son profilage
+        } else {
+          context.go('/home'); // Profilage déjà fait, direction l'accueil
+        }
       }
     } catch (e) {
-      if (mounted) SnackbarUtils.showError(context, "Identifiants incorrects.");
+      if (mounted) SnackbarUtils.showError(context, e.toString().replaceAll("Exception: ", ""));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -160,24 +172,28 @@ class _LoginFormState extends State<LoginForm> {
             const SizedBox(height: 40),
 
             ModernTextField(
-              hintText: "Email ou Téléphone",
+              hintText: "Email",
               icon: Icons.person_outline,
               controller: _emailController,
             ),
             const SizedBox(height: 20),
-            
+
             ModernTextField(
               hintText: "Mot de passe",
               icon: Icons.lock_outline,
               controller: _passwordController,
               isPassword: true,
             ),
-            
+
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () => SnackbarUtils.showWarning(context, "Bientôt disponible !"),
-                child: const Text("Mot de passe oublié ?", style: TextStyle(color: kPrimaryColor)),
+                onPressed: () =>
+                    SnackbarUtils.showWarning(context, "Bientôt disponible !"),
+                child: const Text(
+                  "Mot de passe oublié ?",
+                  style: TextStyle(color: kPrimaryColor),
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -192,10 +208,19 @@ class _LoginFormState extends State<LoginForm> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text("Pas encore de compte ? ", style: TextStyle(color: Colors.grey)),
+                const Text(
+                  "Pas encore de compte ? ",
+                  style: TextStyle(color: Colors.grey),
+                ),
                 GestureDetector(
                   onTap: widget.onSwitch,
-                  child: const Text("S'inscrire", style: TextStyle(color: kPrimaryColor, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    "S'inscrire",
+                    style: TextStyle(
+                      color: kPrimaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -230,29 +255,31 @@ class _SignupFormState extends State<SignupForm> {
   final _confirmPassController = TextEditingController();
   bool _isLoading = false;
 
-  Future<void> _submitSignup() async {
-    if (_nomController.text.isEmpty || _emailController.text.isEmpty || _passController.text.isEmpty) {
-      SnackbarUtils.showWarning(context, "Veuillez remplir les champs obligatoires.");
-      return;
-    }
-
-    if (_passController.text != _confirmPassController.text) {
-      SnackbarUtils.showError(context, "Les mots de passe ne correspondent pas.");
-      return;
-    }
+Future<void> _submitSignup() async {
+    // ... tes vérifications actuelles (nom, email, mot de passe) ...
 
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Firebase Auth Création de compte
-      await Future.delayed(const Duration(seconds: 2));
+      final signupData = SignupModel(
+        firstName: _prenomController.text.trim(),
+        lastName: _nomController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        birthDate: _dateController.text.trim(),
+        password: _passController.text.trim(),
+      );
+
+      await Provider.of<AuthProvider>(context, listen: false).signup(signupData);
 
       if (mounted) {
         SnackbarUtils.showSuccess(context, "Compte créé avec succès !");
-        // context.go('/profiling'); // Redirection vers le profilage MVP
+        
+        // Pour une inscription, c'est TOUJOURS la première connexion
+        context.go('/profiling'); 
       }
     } catch (e) {
-      if (mounted) SnackbarUtils.showError(context, "Erreur lors de l'inscription.");
+      if (mounted) SnackbarUtils.showError(context, e.toString().replaceAll("Exception: ", ""));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -276,17 +303,39 @@ class _SignupFormState extends State<SignupForm> {
 
             Row(
               children: [
-                Expanded(child: ModernTextField(hintText: "Nom", icon: Icons.person_outline, controller: _nomController)),
+                Expanded(
+                  child: ModernTextField(
+                    hintText: "Nom",
+                    icon: Icons.person_outline,
+                    controller: _nomController,
+                  ),
+                ),
                 const SizedBox(width: 15),
-                Expanded(child: ModernTextField(hintText: "Prénom", icon: Icons.person_outline, controller: _prenomController)),
+                Expanded(
+                  child: ModernTextField(
+                    hintText: "Prénom",
+                    icon: Icons.person_outline,
+                    controller: _prenomController,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 15),
 
-            ModernTextField(hintText: "Email", icon: Icons.email_outlined, inputType: TextInputType.emailAddress, controller: _emailController),
+            ModernTextField(
+              hintText: "Email",
+              icon: Icons.email_outlined,
+              inputType: TextInputType.emailAddress,
+              controller: _emailController,
+            ),
             const SizedBox(height: 15),
 
-            ModernTextField(hintText: "Téléphone", icon: Icons.phone_outlined, inputType: TextInputType.phone, controller: _phoneController),
+            ModernTextField(
+              hintText: "Téléphone",
+              icon: Icons.phone_outlined,
+              inputType: TextInputType.phone,
+              controller: _phoneController,
+            ),
             const SizedBox(height: 15),
 
             // Date Picker intégré dans le nouveau style
@@ -298,37 +347,72 @@ class _SignupFormState extends State<SignupForm> {
                   firstDate: DateTime(1900),
                   lastDate: DateTime.now(),
                   builder: (context, child) => Theme(
-                    data: Theme.of(context).copyWith(colorScheme: const ColorScheme.light(primary: kPrimaryColor)),
+                    data: Theme.of(context).copyWith(
+                      colorScheme: const ColorScheme.light(
+                        primary: kPrimaryColor,
+                      ),
+                    ),
                     child: child!,
                   ),
                 );
                 if (pickedDate != null) {
-                  setState(() => _dateController.text = "${pickedDate.day}/${pickedDate.month}/${pickedDate.year}");
+                  setState(
+                    () => _dateController.text =
+                        "${pickedDate.day}/${pickedDate.month}/${pickedDate.year}",
+                  );
                 }
               },
-              child: AbsorbPointer( // Empêche le clavier de s'ouvrir
-                child: ModernTextField(hintText: "Date de naissance", icon: Icons.calendar_today_outlined, controller: _dateController),
+              child: AbsorbPointer(
+                // Empêche le clavier de s'ouvrir
+                child: ModernTextField(
+                  hintText: "Date de naissance",
+                  icon: Icons.calendar_today_outlined,
+                  controller: _dateController,
+                ),
               ),
             ),
             const SizedBox(height: 15),
 
             const Divider(color: Colors.grey, thickness: 0.3, height: 30),
 
-            ModernTextField(hintText: "Mot de passe", icon: Icons.lock_outline, controller: _passController, isPassword: true),
+            ModernTextField(
+              hintText: "Mot de passe",
+              icon: Icons.lock_outline,
+              controller: _passController,
+              isPassword: true,
+            ),
             const SizedBox(height: 15),
-            ModernTextField(hintText: "Confirmer mot de passe", icon: Icons.lock_outline, controller: _confirmPassController, isPassword: true),
+            ModernTextField(
+              hintText: "Confirmer mot de passe",
+              icon: Icons.lock_outline,
+              controller: _confirmPassController,
+              isPassword: true,
+            ),
             const SizedBox(height: 30),
 
-            ModernButton(text: "S'INSCRIRE", isLoading: _isLoading, press: _submitSignup),
+            ModernButton(
+              text: "S'INSCRIRE",
+              isLoading: _isLoading,
+              press: _submitSignup,
+            ),
             const SizedBox(height: 20),
 
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text("Déjà un compte ? ", style: TextStyle(color: Colors.grey)),
+                const Text(
+                  "Déjà un compte ? ",
+                  style: TextStyle(color: Colors.grey),
+                ),
                 GestureDetector(
                   onTap: widget.onSwitch,
-                  child: const Text("Se connecter", style: TextStyle(color: kPrimaryColor, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    "Se connecter",
+                    style: TextStyle(
+                      color: kPrimaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             ),
