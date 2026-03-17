@@ -1,9 +1,9 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
+import 'package:kamer_drive_final/features/auth/providers/auth_provider.dart';
 import 'package:kamer_drive_final/shared/widgets/logo.dart';
-import 'package:kamer_drive_final/shared/widgets/name.dart';
+import 'package:provider/provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,13 +13,20 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  @override
+@override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 2), () {
-      // On vérifie que le widget est toujours actif avant de naviguer
+    
+    // Au lieu d'un simple délai, on attend de vérifier l'état de connexion
+    Future.delayed(const Duration(seconds: 2), () async {
       if (mounted) {
-        context.go('/onboarding'); // Navigation propre
+        // Appelle la fonction Auto-Login
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final String nextRoute = await authProvider.checkAuthStateAndRoute();
+        
+        if (mounted) {
+          context.go(nextRoute); // Va vers /home, /profiling ou /onboarding
+        }
       }
     });
   }

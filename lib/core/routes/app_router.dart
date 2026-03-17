@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:kamer_drive_final/features/auth/screen/auth_screen.dart';
+import 'package:kamer_drive_final/features/auth/screens/auth_screen.dart';
+import 'package:kamer_drive_final/features/home/screens/main_screen.dart';
 import 'package:kamer_drive_final/features/onboarding/screens/profiling_screen.dart';
 
 // Importe tes écrans actuels
@@ -49,13 +50,13 @@ class AppRouter {
       ),
 
       // 5. Main Home Screen (Placeholder pour la suite)
-      /*
+      
       GoRoute(
         path: '/home',
         name: 'home',
         builder: (context, state) => const MainScreen(),
       ),
-      */
+      
     ],
 
     // C'est ici qu'on mettra la logique "Redirect" plus tard.

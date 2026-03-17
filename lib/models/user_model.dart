@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'review_model.dart'; // N'oublie pas cet import
 
 class UserModel {
@@ -51,15 +53,18 @@ class UserModel {
       address: json['address'] ?? '',
       idDocuments: List<String>.from(json['idDocuments'] ?? []),
       proofOfAddress: json['proofOfAddress'] != null ? List<String>.from(json['proofOfAddress']) : null,
-      reviews: (json['reviews'] as List<dynamic>?)
-              ?.map((e) => ReviewModel.fromJson(e))
-              .toList() ?? [],
-      
+      reviews: (json['reviews'] as List<dynamic>?)?.map((e) => ReviewModel.fromJson(e)).toList() ?? [],
       isFirstConnection: json['isFirstConnection'] ?? true,
       hasCompletedProfiling: json['hasCompletedProfiling'] ?? false,
       intents: List<String>.from(json['intents'] ?? []),
       ownsVehicle: json['ownsVehicle'] ?? false,
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
+      
+      // --- LA CORRECTION EST ICI ---
+      createdAt: json['createdAt'] != null 
+          ? (json['createdAt'] is Timestamp 
+              ? (json['createdAt'] as Timestamp).toDate() // Si c'est un Timestamp Firebase
+              : DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()) // Si c'est un String
+          : DateTime.now(),
     );
   }
 

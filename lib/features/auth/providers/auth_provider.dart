@@ -2,10 +2,47 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:kamer_drive_final/models/auth_model.dart';
+import 'package:kamer_drive_final/models/user_model.dart';
 
 class AuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Stocke les données de l'utilisateur connecté
+  UserModel? _currentUser;
+  UserModel? get currentUser => _currentUser;
+
+  // --- VÉRIFICATION AU LANCEMENT (AUTO-LOGIN) ---
+  // Renvoie la route vers laquelle l'application doit aller
+  Future<String> checkAuthStateAndRoute() async {
+    User? firebaseUser = _auth.currentUser;
+    
+    // 1. S'il n'est pas connecté, on l'envoie vers l'onboarding
+    if (firebaseUser == null) return '/onboarding';
+
+    try {
+      // 2. S'il est connecté, on récupère ses données
+      DocumentSnapshot doc = await _firestore.collection('users').doc(firebaseUser.uid).get();
+      
+      if (doc.exists) {
+        // On convertit les données Firestore en UserModel
+        _currentUser = UserModel.fromJson(doc.data() as Map<String, dynamic>);
+        notifyListeners(); // Met à jour l'interface partout
+
+        // 3. On vérifie s'il a fini son profilage
+        if (_currentUser!.isFirstConnection || !_currentUser!.hasCompletedProfiling) {
+          return '/profiling';
+        }
+        return '/home'; // Tout est bon, direction l'accueil !
+      }
+    } catch (e) {
+      debugPrint("Erreur lors de la récupération de l'utilisateur: $e");
+    }
+    
+    // En cas de problème de base de données, on le déconnecte par sécurité
+    await _auth.signOut();
+    return '/auth';
+  }
 
   Future<void> signup(SignupModel data) async {
     try {
@@ -59,18 +96,15 @@ class AuthProvider with ChangeNotifier {
         password: data.password,
       );
 
-      String uid = userCredential.user!.uid;
-
-      // Récupérer les données de l'utilisateur depuis Firestore
-      DocumentSnapshot userDoc = await _firestore.collection('users').doc(uid).get();
-
-      if (userDoc.exists) {
-        // Comme demandé, on se base UNIQUEMENT sur isFirstConnection
-        bool isFirstConnection = userDoc.get('isFirstConnection') ?? true;
-        return isFirstConnection;
+      // On charge les données dans la variable globale
+      DocumentSnapshot doc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
+      if (doc.exists) {
+        _currentUser = UserModel.fromJson(doc.data() as Map<String, dynamic>);
+        notifyListeners();
+        
+        return _currentUser!.isFirstConnection;
       }
-
-      return false; // Par défaut, on l'envoie à l'accueil
+      return false;
 
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found' || e.code == 'wrong-password' || e.code == 'invalid-credential') {
@@ -83,20 +117,29 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // --- FINALISER LE PROFILAGE ---
   Future<void> completeProfiling({required List<String> intents, required bool ownsVehicle}) async {
     try {
       String uid = _auth.currentUser!.uid;
 
+      // 1. Mise à jour dans la base de données Firestore
       await _firestore.collection('users').doc(uid).update({
         'intents': intents,
         'ownsVehicle': ownsVehicle,
-        'isFirstConnection': false, // <--- TRÈS IMPORTANT : On le passe à false ici !
-        'hasCompletedProfiling': false,
+        'isFirstConnection': false, 
+        'hasCompletedProfiling': true,
       });
+
+      // 2. NOUVEAU : Mettre à jour l'utilisateur localement pour l'application
+      DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
+      if (doc.exists) {
+        _currentUser = UserModel.fromJson(doc.data() as Map<String, dynamic>);
+        notifyListeners(); // Rafraîchit instantanément la HomeScreen !
+      }
       
     } catch (e) {
-      throw Exception('Erreur lors de la mise à jour du profil.');
+      // J'ajoute le détail de l'erreur pour t'aider à débugger si ça plante
+      debugPrint("Erreur de profilage : $e"); 
+      throw Exception("Erreur lors de la mise à jour du profil.");
     }
   }
 }

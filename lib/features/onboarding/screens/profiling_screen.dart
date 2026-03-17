@@ -51,25 +51,23 @@ class _ProfilingScreenState extends State<ProfilingScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Appel au AuthProvider pour mettre à jour Firestore
-      
+      // 1. Appel au Provider pour sauvegarder ET mettre à jour l'utilisateur local
       await Provider.of<AuthProvider>(context, listen: false).completeProfiling(
         intents: _selectedIntents,
         ownsVehicle: _ownsVehicle,
       );
       
+      // On retire le Future.delayed car l'appel Firebase prend déjà un peu de temps
       
-      await Future.delayed(const Duration(seconds: 2));
-
       if (mounted) {
         SnackbarUtils.showSuccess(context, "Profil configuré avec succès !");
-        
-        // Redirection vers l'accueil (ou l'ajout de véhicule selon le cas)
-        // context.go('/home');
-        print("Aller vers l'accueil");
+        context.go('/home');
       }
     } catch (e) {
-      if (mounted) SnackbarUtils.showError(context, "Une erreur est survenue.");
+      if (mounted) {
+        // Affiche la vraie erreur remontée par le catch du Provider
+        SnackbarUtils.showError(context, e.toString().replaceAll("Exception: ", ""));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
