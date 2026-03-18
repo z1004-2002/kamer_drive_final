@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
+import 'package:kamer_drive_final/features/profile/screens/profile_screen.dart';
 import 'package:kamer_drive_final/models/user_model.dart';
 import 'home_screen.dart';
 
@@ -53,7 +54,7 @@ class _MainScreenState extends State<MainScreen> {
       const Center(child: Text("Recherche")), // const SearchScreen(),
       const SizedBox.shrink(), // Dummy pour l'index 2 (le bouton +)
       const Center(child: Text("Historique")), // const HistoryScreen(),
-      const Center(child: Text("Profil")), // ProfileScreen(user: user),
+      ProfileScreen(),
     ];
   }
 
@@ -64,10 +65,7 @@ class _MainScreenState extends State<MainScreen> {
 
       // --- CORPS DE LA PAGE ---
       // IndexedStack permet de garder l'état de la page (ex: position du scroll)
-      body: IndexedStack(
-        index: _navIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _navIndex, children: _pages),
 
       // --- BOUTON CENTRAL (FAB) ---
       floatingActionButton: SizedBox(
@@ -98,17 +96,26 @@ class _MainScreenState extends State<MainScreen> {
         unselectedFontSize: 12,
         showUnselectedLabels: true,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: "Accueil"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_filled),
+            label: "Accueil",
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: "Recherche"),
-          
+
           // --- ELEMENT INVISIBLE (DUMMY) ---
           BottomNavigationBarItem(
             icon: Icon(Icons.add, color: Colors.transparent),
             label: "",
           ),
-          
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: "Historique"),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: "Profil"),
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            label: "Historique",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: "Profil",
+          ),
         ],
       ),
     );

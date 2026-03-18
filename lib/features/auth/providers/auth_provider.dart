@@ -16,21 +16,25 @@ class AuthProvider with ChangeNotifier {
   // Renvoie la route vers laquelle l'application doit aller
   Future<String> checkAuthStateAndRoute() async {
     User? firebaseUser = _auth.currentUser;
-    
+
     // 1. S'il n'est pas connecté, on l'envoie vers l'onboarding
     if (firebaseUser == null) return '/onboarding';
 
     try {
       // 2. S'il est connecté, on récupère ses données
-      DocumentSnapshot doc = await _firestore.collection('users').doc(firebaseUser.uid).get();
-      
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(firebaseUser.uid)
+          .get();
+
       if (doc.exists) {
         // On convertit les données Firestore en UserModel
         _currentUser = UserModel.fromJson(doc.data() as Map<String, dynamic>);
         notifyListeners(); // Met à jour l'interface partout
 
         // 3. On vérifie s'il a fini son profilage
-        if (_currentUser!.isFirstConnection || !_currentUser!.hasCompletedProfiling) {
+        if (_currentUser!.isFirstConnection ||
+            !_currentUser!.hasCompletedProfiling) {
           return '/profiling';
         }
         return '/home'; // Tout est bon, direction l'accueil !
@@ -38,7 +42,7 @@ class AuthProvider with ChangeNotifier {
     } catch (e) {
       debugPrint("Erreur lors de la récupération de l'utilisateur: $e");
     }
-    
+
     // En cas de problème de base de données, on le déconnecte par sécurité
     await _auth.signOut();
     return '/auth';
@@ -47,10 +51,11 @@ class AuthProvider with ChangeNotifier {
   Future<void> signup(SignupModel data) async {
     try {
       // 1. Créer l'utilisateur dans Firebase Auth
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: data.email,
-        password: data.password,
-      );
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(
+            email: data.email,
+            password: data.password,
+          );
 
       String uid = userCredential.user!.uid;
 
@@ -68,12 +73,13 @@ class AuthProvider with ChangeNotifier {
         'proofOfAddress': [], // Optionnel
         'reviews': [],
         'createdAt': FieldValue.serverTimestamp(),
-        'isFirstConnection': true,          // Indique que l'utilisateur vient de s'inscrire
-        'hasCompletedProfiling': false,     // Vaudra "true" après l'écran des intentions
-        'intents': [],                      // Liste vide par défaut
-        'ownsVehicle': false,               // False par défaut
+        'isFirstConnection':
+            true, // Indique que l'utilisateur vient de s'inscrire
+        'hasCompletedProfiling':
+            false, // Vaudra "true" après l'écran des intentions
+        'intents': [], // Liste vide par défaut
+        'ownsVehicle': false, // False par défaut
       });
-
     } on FirebaseAuthException catch (e) {
       if (e.code == 'email-already-in-use') {
         throw Exception('Cet email est déjà utilisé.');
@@ -97,17 +103,21 @@ class AuthProvider with ChangeNotifier {
       );
 
       // On charge les données dans la variable globale
-      DocumentSnapshot doc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .get();
       if (doc.exists) {
         _currentUser = UserModel.fromJson(doc.data() as Map<String, dynamic>);
         notifyListeners();
-        
+
         return _currentUser!.isFirstConnection;
       }
       return false;
-
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found' || e.code == 'wrong-password' || e.code == 'invalid-credential') {
+      if (e.code == 'user-not-found' ||
+          e.code == 'wrong-password' ||
+          e.code == 'invalid-credential') {
         throw Exception('Email ou mot de passe incorrect.');
       } else {
         throw Exception(e.message ?? 'Erreur de connexion.');
@@ -117,7 +127,10 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<void> completeProfiling({required List<String> intents, required bool ownsVehicle}) async {
+  Future<void> completeProfiling({
+    required List<String> intents,
+    required bool ownsVehicle,
+  }) async {
     try {
       String uid = _auth.currentUser!.uid;
 
@@ -125,21 +138,40 @@ class AuthProvider with ChangeNotifier {
       await _firestore.collection('users').doc(uid).update({
         'intents': intents,
         'ownsVehicle': ownsVehicle,
-        'isFirstConnection': false, 
+        'isFirstConnection': false,
         'hasCompletedProfiling': true,
       });
 
       // 2. NOUVEAU : Mettre à jour l'utilisateur localement pour l'application
-      DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(uid)
+          .get();
       if (doc.exists) {
         _currentUser = UserModel.fromJson(doc.data() as Map<String, dynamic>);
         notifyListeners(); // Rafraîchit instantanément la HomeScreen !
       }
-      
     } catch (e) {
       // J'ajoute le détail de l'erreur pour t'aider à débugger si ça plante
-      debugPrint("Erreur de profilage : $e"); 
+      debugPrint("Erreur de profilage : $e");
       throw Exception("Erreur lors de la mise à jour du profil.");
+    }
+  }
+
+  // --- DÉCONNEXION ---
+  Future<void> logout() async {
+    try {
+      // 1. Déconnexion de Firebase
+      await _auth.signOut();
+
+      // 2. On vide les données de l'utilisateur localement
+      _currentUser = null;
+
+      // 3. On avertit toute l'application que l'utilisateur n'est plus là
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Erreur lors de la déconnexion : $e");
+      throw Exception("Impossible de se déconnecter pour le moment.");
     }
   }
 }
