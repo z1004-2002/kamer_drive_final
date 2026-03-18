@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:kamer_drive_final/core/routes/app_router.dart';
 import 'package:kamer_drive_final/features/auth/providers/auth_provider.dart';
 import 'package:kamer_drive_final/features/my_listings/providers/vehicle_provider.dart';
+import 'package:kamer_drive_final/features/profile/providers/profile_provider.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 
@@ -14,6 +15,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => VehicleProvider()),
+        ChangeNotifierProvider(create: (_) => ProfileProvider()),
       ],
       child: const KamerDriveApp(),
     ),

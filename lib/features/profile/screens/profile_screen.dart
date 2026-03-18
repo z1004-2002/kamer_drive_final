@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../providers/profile_provider.dart'; // <--- IMPORT DU NOUVEAU PROVIDER
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -11,20 +12,17 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
 
-    // Récupération des données de l'utilisateur connecté
-    final currentUser = context.watch<AuthProvider>().currentUser;
+    // On écoute le ProfileProvider au lieu de l'AuthProvider
+    final currentUser = context.watch<ProfileProvider>().currentUser;
 
-    // --- CONDITION D'ALERTE ---
-    // On considère le profil incomplet si l'adresse est vide OU s'il n'a pas mis de documents d'identité
     bool isProfileIncomplete =
         currentUser != null &&
-        (currentUser.address.isEmpty || currentUser.idDocuments.isEmpty);
+        (currentUser.address.isEmpty || currentUser.phone.isEmpty);
 
     return Scaffold(
       backgroundColor: kBackgroundColor,
       body: Stack(
         children: [
-          // --- CERCLES DÉCORATIFS EN FOND ---
           Positioned(
             left: -size.width * 0.3,
             bottom: size.height * 0.4,
@@ -50,10 +48,8 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
 
-          // --- CONTENU PRINCIPAL ---
           Column(
             children: [
-              // 1. HEADER AVEC AVATAR CHEVAUCHANT
               SizedBox(
                 height: 240,
                 child: Stack(
@@ -124,8 +120,6 @@ class ProfileScreen extends StatelessWidget {
               ),
 
               const SizedBox(height: 10),
-
-              // 2. NOM ET INFOS DE BASE
               Text(
                 "${currentUser?.firstName ?? 'Utilisateur'} ${currentUser?.lastName ?? ''}",
                 style: const TextStyle(
@@ -136,7 +130,7 @@ class ProfileScreen extends StatelessWidget {
               ),
               const SizedBox(height: 5),
               Text(
-                currentUser?.email ?? 'email@exemple.com',
+                currentUser?.email ?? 'Chargement...',
                 style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 5),
@@ -150,7 +144,9 @@ class ProfileScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  currentUser?.phone ?? 'Non renseigné',
+                  (currentUser?.phone == null || currentUser!.phone.isEmpty)
+                      ? 'Téléphone non renseigné'
+                      : currentUser.phone,
                   style: const TextStyle(
                     color: kPrimaryColor,
                     fontWeight: FontWeight.bold,
@@ -161,35 +157,30 @@ class ProfileScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // 3. MENU DES OPTIONS ET ALERTE (Scrollable)
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
                     children: [
-                      // --- NOUVEAU : ALERTE PROFIL INCOMPLET ---
                       if (isProfileIncomplete) ...[
                         _buildProfileAlertCard(context),
                         const SizedBox(height: 20),
                       ],
 
-                      // Bloc 1 : Paramètres du compte
                       _buildMenuBlock([
                         _buildMenuItem(
                           Icons.person_outline,
                           "Informations personnelles",
                           () {
-                            // TODO: Navigation vers l'édition du profil
+                            context.push('/edit_profile');
                           },
                         ),
                         _buildMenuDivider(),
                         _buildMenuItem(
                           Icons.badge_outlined,
                           "Mes documents (Identité/Permis)",
-                          () {
-                            // TODO: Navigation vers les documents
-                          },
+                          () {},
                         ),
                         _buildMenuDivider(),
                         _buildMenuItem(
@@ -200,8 +191,6 @@ class ProfileScreen extends StatelessWidget {
                       ]),
 
                       const SizedBox(height: 20),
-
-                      // Bloc 2 : Support et Autre
                       _buildMenuBlock([
                         _buildMenuItem(
                           Icons.help_outline,
@@ -217,8 +206,6 @@ class ProfileScreen extends StatelessWidget {
                       ]),
 
                       const SizedBox(height: 20),
-
-                      // Bloc 3 : Déconnexion
                       _buildMenuBlock([
                         _buildMenuItem(
                           Icons.logout,
@@ -227,7 +214,6 @@ class ProfileScreen extends StatelessWidget {
                           isDestructive: true,
                         ),
                       ]),
-
                       const SizedBox(height: 40),
                     ],
                   ),
@@ -240,9 +226,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // --- WIDGETS DESIGN SYSTEM ---
-
-  // La nouvelle bannière d'alerte pour le profil incomplet
   Widget _buildProfileAlertCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(15),
@@ -287,7 +270,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "Ajoutez vos documents pour pouvoir louer ou vendre des véhicules.",
+                  "Ajoutez vos informations pour pouvoir utiliser toutes les fonctionnalités.",
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.orange.shade800,
@@ -299,10 +282,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           ElevatedButton(
-            onPressed: () {
-              // TODO: Rediriger vers la page pour compléter les infos (ex: CNI)
-              print("Compléter le profil cliqué");
-            },
+            onPressed: () => context.push('/edit_profile'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange.shade600,
               elevation: 0,
@@ -325,25 +305,21 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // Bloc blanc contenant plusieurs éléments de menu
-  Widget _buildMenuBlock(List<Widget> children) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(children: children),
-    );
-  }
+  Widget _buildMenuBlock(List<Widget> children) => Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 5),
+        ),
+      ],
+    ),
+    child: Column(children: children),
+  );
 
-  // Un élément de menu cliquable
   Widget _buildMenuItem(
     IconData icon,
     String title,
@@ -355,7 +331,6 @@ class ProfileScreen extends StatelessWidget {
         ? Colors.red.withOpacity(0.1)
         : lPrimaryColor;
     Color iconColor = isDestructive ? Colors.red : kPrimaryColor;
-
     return ListTile(
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
@@ -383,18 +358,14 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // Séparateur léger entre les éléments d'un même bloc
-  Widget _buildMenuDivider() {
-    return Divider(
-      height: 1,
-      thickness: 1,
-      color: Colors.grey.shade100,
-      indent: 70,
-      endIndent: 20,
-    );
-  }
+  Widget _buildMenuDivider() => Divider(
+    height: 1,
+    thickness: 1,
+    color: Colors.grey.shade100,
+    indent: 70,
+    endIndent: 20,
+  );
 
-  // --- LOGIQUE DE DÉCONNEXION ---
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -413,10 +384,15 @@ class ProfileScreen extends StatelessWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await Provider.of<AuthProvider>(context, listen: false).logout();
-              if (context.mounted) {
-                context.go('/auth');
-              }
+              Provider.of<ProfileProvider>(
+                context,
+                listen: false,
+              ).clearProfile(); // Nettoie le profil
+              await Provider.of<AuthProvider>(
+                context,
+                listen: false,
+              ).logout(); // Gère le log out Firebase
+              if (context.mounted) context.go('/auth');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
