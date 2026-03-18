@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
 import 'package:kamer_drive_final/shared/widgets/name.dart';
+import 'package:kamer_drive_final/shared/widgets/vehicle_details_modal.dart';
 import 'package:provider/provider.dart';
+import '../../../models/vehicle_model.dart';
 import '../../auth/providers/auth_provider.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -14,11 +16,184 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // --- FAUSSES DONNÉES POUR LE MVP (À remplacer par Firestore plus tard) ---
+  final List<VehicleModel> _rentalVehicles = [
+    VehicleModel(
+      id: "1",
+      ownerId: "user1",
+      brand: "Toyota",
+      modelName: "Corolla",
+      year: 2021,
+      city: "Douala",
+      address: "",
+      images: [
+        "assets/images/cars/car1.jpg",
+        "assets/images/cars/car1.jpg",
+        "assets/images/cars/car1.jpg",
+      ],
+      description:
+          "Superbe Toyota Corolla très économique, parfaite pour vos courses en ville. Entretien à jour.",
+      registrationPlateUrl: "",
+      registrationDocumentUrl: "",
+      insuranceCertificateUrl: "",
+      validationStatus: "Validé",
+      isForRent: true,
+      rentPricePerDay: 35000,
+      isForSale: false,
+      seats: 5,
+      gearbox: "Automatique",
+      fuelType: "Essence",
+      hasAC: true,
+      reviews: [],
+    ),
+    VehicleModel(
+      id: "2",
+      ownerId: "user2",
+      brand: "Hyundai",
+      modelName: "Tucson",
+      year: 2022,
+      city: "Yaoundé",
+      address: "",
+      images: [
+        "assets/images/cars/car2.jpg",
+        "assets/images/cars/car2.jpg",
+        "assets/images/cars/car2.jpg",
+      ],
+      description:
+          "SUV spacieux et confortable pour vos voyages en famille. Sièges en cuir.",
+      registrationPlateUrl: "",
+      registrationDocumentUrl: "",
+      insuranceCertificateUrl: "",
+      validationStatus: "Validé",
+      isForRent: true,
+      rentPricePerDay: 60000,
+      isForSale: false,
+      seats: 4,
+      gearbox: "Automatique",
+      fuelType: "Diesel",
+      hasAC: true,
+      reviews: [],
+    ),
+    VehicleModel(
+      id: "1",
+      ownerId: "user1",
+      brand: "Toyota",
+      modelName: "Corolla",
+      year: 2021,
+      city: "Douala",
+      address: "",
+      images: [
+        "assets/images/cars/car1.jpg",
+        "assets/images/cars/car1.jpg",
+        "assets/images/cars/car1.jpg",
+      ],
+      description:
+          "Superbe Toyota Corolla très économique, parfaite pour vos courses en ville. Entretien à jour.",
+      registrationPlateUrl: "",
+      registrationDocumentUrl: "",
+      insuranceCertificateUrl: "",
+      validationStatus: "Validé",
+      isForRent: true,
+      rentPricePerDay: 35000,
+      isForSale: false,
+      seats: 5,
+      gearbox: "Automatique",
+      fuelType: "Essence",
+      hasAC: true,
+      reviews: [],
+    ),
+  ];
+
+  final List<VehicleModel> _saleVehicles = [
+    VehicleModel(
+      id: "3",
+      ownerId: "user3",
+      brand: "Mercedes-Benz",
+      modelName: "C300",
+      year: 2019,
+      city: "Douala",
+      address: "",
+      images: [
+        "assets/images/cars/car2.jpg",
+        "assets/images/cars/car2.jpg",
+        "assets/images/cars/car2.jpg",
+      ],
+      description:
+          "Véhicule de luxe en parfait état. Moteur V6, toit ouvrant panoramique.",
+      registrationPlateUrl: "",
+      registrationDocumentUrl: "",
+      insuranceCertificateUrl: "",
+      validationStatus: "Validé",
+      isForRent: false,
+      isForSale: true,
+      salePrice: 15000000,
+      seats: 5,
+      gearbox: "Automatique",
+      fuelType: "Essence",
+      hasAC: true,
+      reviews: [],
+    ),
+    VehicleModel(
+      id: "3",
+      ownerId: "user3",
+      brand: "Mercedes-Benz",
+      modelName: "C300",
+      year: 2019,
+      city: "Douala",
+      address: "",
+      images: [
+        "assets/images/cars/car1.jpg",
+        "assets/images/cars/car1.jpg",
+        "assets/images/cars/car1.jpg",
+      ],
+      description:
+          "Véhicule de luxe en parfait état. Moteur V6, toit ouvrant panoramique.",
+      registrationPlateUrl: "",
+      registrationDocumentUrl: "",
+      insuranceCertificateUrl: "",
+      validationStatus: "Validé",
+      isForRent: false,
+      isForSale: true,
+      salePrice: 15000000,
+      seats: 5,
+      gearbox: "Automatique",
+      fuelType: "Essence",
+      hasAC: true,
+      reviews: [],
+    ),
+    VehicleModel(
+      id: "3",
+      ownerId: "user3",
+      brand: "Mercedes-Benz",
+      modelName: "C300",
+      year: 2019,
+      city: "Douala",
+      address: "",
+      images: [
+        "assets/images/cars/car2.jpg",
+        "assets/images/cars/car2.jpg",
+        "assets/images/cars/car2.jpg",
+      ],
+      description:
+          "Véhicule de luxe en parfait état. Moteur V6, toit ouvrant panoramique.",
+      registrationPlateUrl: "",
+      registrationDocumentUrl: "",
+      insuranceCertificateUrl: "",
+      validationStatus: "Validé",
+      isForRent: false,
+      isForSale: true,
+      salePrice: 15000000,
+      seats: 5,
+      gearbox: "Automatique",
+      fuelType: "Essence",
+      hasAC: true,
+      reviews: [],
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
-
-    // Récupération des données depuis la base de données via le Provider
     final currentUser = context.watch<AuthProvider>().currentUser;
     final userName = currentUser?.firstName ?? "Utilisateur";
 
@@ -26,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: kBackgroundColor,
       body: Stack(
         children: [
-          // --- CERCLES DÉCORATIFS EN FOND ---
+          // CERCLES DÉCORATIFS
           Positioned(
             left: -size.width * 0.3,
             bottom: size.height * 0.4,
@@ -62,21 +237,15 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // --- LE CONTENU PRINCIPAL ---
+          // CONTENU PRINCIPAL
           Column(
             children: [
-              // 1. LE HEADER FIXE CORRIGÉ
-              _buildFixedHeader(userName),
+              _buildFixedHeader(userName), // Header anti-overflow
 
-              // 2. LE CONTENU SCROLLABLE
-              // L'utilisation de Expanded garantit que le texte disparaît pile en dessous du header
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.only(
-                    top: 15,
-                    bottom: 80,
-                  ), // Top padding réduit pour être proche de la barre
+                  padding: const EdgeInsets.only(top: 15, bottom: 80),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -86,48 +255,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       SizedBox(
                         height: 260,
-                        child: ListView(
+                        child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           physics: const BouncingScrollPhysics(),
                           padding: const EdgeInsets.only(left: 20),
-                          children: [
-                            _buildVehicleCard(
-                              model: "Toyota Corolla 2021",
-                              price: "35.000 FCFA",
-                              period: "/jour",
-                              rating: 4.8,
-                              imagePath: "assets/images/cars/car1.jpg",
-                              city: "Douala",
-                              isRental: true,
-                            ),
-                            _buildVehicleCard(
-                              model: "Hyundai Tucson",
-                              price: "60.000 FCFA",
-                              period: "/jour",
-                              rating: 4.5,
-                              imagePath: "assets/images/cars/car2.jpg",
-                              city: "Yaoundé",
-                              isRental: true,
-                            ),
-                            _buildVehicleCard(
-                              model: "Toyota Corolla 2021",
-                              price: "35.000 FCFA",
-                              period: "/jour",
-                              rating: 4.8,
-                              imagePath: "assets/images/cars/car1.jpg",
-                              city: "Douala",
-                              isRental: true,
-                            ),
-                            _buildVehicleCard(
-                              model: "Hyundai Tucson",
-                              price: "60.000 FCFA",
-                              period: "/jour",
-                              rating: 4.5,
-                              imagePath: "assets/images/cars/car2.jpg",
-                              city: "Yaoundé",
-                              isRental: true,
-                            ),
-                          ],
+                          itemCount: _rentalVehicles.length,
+                          itemBuilder: (context, index) =>
+                              _buildVehicleCard(_rentalVehicles[index]),
                         ),
                       ),
 
@@ -139,48 +273,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       SizedBox(
                         height: 260,
-                        child: ListView(
+                        child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           physics: const BouncingScrollPhysics(),
                           padding: const EdgeInsets.only(left: 20),
-                          children: [
-                            _buildVehicleCard(
-                              model: "Mercedes-Benz C300",
-                              price: "15.000.000 FCFA",
-                              period: "",
-                              rating: 4.9,
-                              imagePath: "assets/images/cars/car2.jpg",
-                              city: "Douala",
-                              isRental: false,
-                            ),
-                            _buildVehicleCard(
-                              model: "Kia Sportage 2020",
-                              price: "12.500.000 FCFA",
-                              period: "",
-                              rating: 5.0,
-                              imagePath: "assets/images/cars/car1.jpg",
-                              city: "Bafoussam",
-                              isRental: false,
-                            ),
-                            _buildVehicleCard(
-                              model: "Mercedes-Benz C300",
-                              price: "15.000.000 FCFA",
-                              period: "",
-                              rating: 4.9,
-                              imagePath: "assets/images/cars/car2.jpg",
-                              city: "Douala",
-                              isRental: false,
-                            ),
-                            _buildVehicleCard(
-                              model: "Kia Sportage 2020",
-                              price: "12.500.000 FCFA",
-                              period: "",
-                              rating: 5.0,
-                              imagePath: "assets/images/cars/car1.jpg",
-                              city: "Bafoussam",
-                              isRental: false,
-                            ),
-                          ],
+                          itemCount: _saleVehicles.length,
+                          itemBuilder: (context, index) =>
+                              _buildVehicleCard(_saleVehicles[index]),
                         ),
                       ),
                     ],
@@ -194,16 +293,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- LE HEADER FIXE (LA CORRECTION EST ICI) ---
+  // HEADER AVEC LA CORRECTION D'OVERFLOW
   Widget _buildFixedHeader(String userName) {
-    // On force la hauteur globale du header à 215 (190 de fond vert + 25 de barre de recherche)
     return SizedBox(
-      height: 195,
+      height: 215,
       child: Stack(
         children: [
-          // Le fond dégradé vert (Hauteur de 190)
           Container(
-            height: 170,
+            height: 190,
             width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -265,10 +362,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-
-          // La barre de recherche
-          // Elle est désormais "posée" tout en bas du SizedBox (à la position 0),
-          // elle dépasse donc visuellement de 25 pixels du fond vert, mais est contenue dans le SizedBox global.
           Positioned(
             bottom: 0,
             left: 20,
@@ -324,7 +417,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- TITRE DE SECTION ---
   Widget _buildSectionTitle(String title, VoidCallback onSeeAll) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -351,161 +443,174 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- CARTE DE VÉHICULE ---
-  Widget _buildVehicleCard({
-    required String model,
-    required String price,
-    required String period,
-    required double rating,
-    required String imagePath,
-    required String city,
-    required bool isRental,
-  }) {
-    return Container(
-      width: 220,
-      margin: const EdgeInsets.only(right: 15, bottom: 10, top: 5),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              Container(
-                height: 130,
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: lPrimaryColor,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(20),
-                  ),
-                  child: Image.asset(
-                    imagePath,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.directions_car,
-                      size: 60,
-                      color: kPrimaryColor,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 10,
-                left: 10,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isRental ? kPrimaryColor : Colors.orange.shade600,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    isRental ? "Location" : "Vente",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+  // CARTE DE VÉHICULE CLIQUABLE
+  Widget _buildVehicleCard(VehicleModel vehicle) {
+    String priceDisplay = vehicle.isForRent
+        ? "${vehicle.rentPricePerDay?.toInt()} FCFA"
+        : "${vehicle.salePrice?.toInt()} FCFA";
+    String period = vehicle.isForRent ? "/jour" : "";
+    double rating = vehicle.reviews.isEmpty
+        ? 4.8
+        : 4.8; // Simplifié pour le design
 
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return GestureDetector(
+      onTap: () {
+        // --- C'EST ICI QU'ON APPELLE LE MODAL ---
+        showVehicleDetailsModal(context, vehicle);
+      },
+      child: Container(
+        width: 220,
+        margin: const EdgeInsets.only(right: 15, bottom: 10, top: 5),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        model,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                Container(
+                  height: 130,
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: lPrimaryColor,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                    // Utilisation d'Image.asset temporaire pour tes images locales
+                    child: Image.asset(
+                      vehicle.images.first,
+                      fit: BoxFit.cover,
+                      errorBuilder: (c, e, s) => const Icon(
+                        Icons.directions_car,
+                        size: 60,
+                        color: kPrimaryColor,
                       ),
                     ),
-                    Row(
-                      children: [
-                        const Icon(Icons.star, color: Colors.amber, size: 16),
-                        Text(
-                          " $rating",
+                  ),
+                ),
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: vehicle.isForRent
+                          ? kPrimaryColor
+                          : Colors.orange.shade600,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      vehicle.isForRent ? "Location" : "Vente",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "${vehicle.brand} ${vehicle.modelName}",
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 12,
+                            fontSize: 15,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on, color: Colors.grey, size: 14),
-                    Text(
-                      " $city",
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          price,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isRental
-                                ? kPrimaryColor
-                                : Colors.orange.shade700,
-                            fontSize: 14,
-                          ),
-                        ),
-                        if (period.isNotEmpty)
+                      ),
+                      Row(
+                        children: [
+                          const Icon(Icons.star, color: Colors.amber, size: 16),
                           Text(
-                            period,
+                            " $rating",
                             style: const TextStyle(
-                              color: Colors.grey,
+                              fontWeight: FontWeight.bold,
                               fontSize: 12,
                             ),
                           ),
-                      ],
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        print("Ouvrir les détails de $model");
-                      },
-                      child: Container(
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        color: Colors.grey,
+                        size: 14,
+                      ),
+                      Text(
+                        " ${vehicle.city}",
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            priceDisplay,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: vehicle.isForRent
+                                  ? kPrimaryColor
+                                  : Colors.orange.shade700,
+                              fontSize: 14,
+                            ),
+                          ),
+                          if (period.isNotEmpty)
+                            Text(
+                              period,
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                        ],
+                      ),
+                      Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: isRental
+                          color: vehicle.isForRent
                               ? kPrimaryColor
                               : Colors.orange.shade600,
                           borderRadius: BorderRadius.circular(10),
@@ -516,13 +621,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           size: 16,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

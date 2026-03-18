@@ -1,80 +1,124 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:kamer_drive_final/models/vehicle_model.dart';
+import '../../../models/vehicle_model.dart'; // Assure-toi d'avoir ce modèle
 
 class VehicleProvider with ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instanceFor(
+    bucket: "gs://kamer-drive-41b9b.firebasestorage.app",
+  );
+  // final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  // --- UPLOAD D'UNE IMAGE SUR FIREBASE STORAGE ---
-  Future<String> _uploadImage(File imageFile, String folderPath) async {
-    String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-    Reference ref = _storage.ref().child('$folderPath/$fileName');
-    
-    UploadTask uploadTask = ref.putFile(imageFile);
-    TaskSnapshot snapshot = await uploadTask;
-    return await snapshot.ref.getDownloadURL();
+  // Fonction pour uploader UNE image et récupérer son URL
+  Future<String> _uploadImage(File image, String path) async {
+    try {
+      Reference ref = _storage.ref().child(path);
+      UploadTask uploadTask = ref.putFile(image);
+      TaskSnapshot snapshot = await uploadTask.timeout(
+        const Duration(seconds: 20),
+        onTimeout: () => throw Exception("Temps d'attente dépassé (Timeout)"),
+      );
+      return await snapshot.ref.getDownloadURL();
+    } catch (e) {
+      debugPrint("🛑 Erreur Upload Storage ($path) : $e");
+      throw Exception("Erreur lors de l'upload de l'image.");
+    }
   }
 
-  // --- CRÉATION DU VÉHICULE ---
-  Future<void> addVehicle({
+  Future<void> submitVehicle({
     required String brand,
     required String modelName,
     required int year,
+    required String description,
+    required String city,
+    required String address,
+    required int seats,
+    required String gearbox,
+    required String fuelType,
+    required bool hasAC,
     required bool isForRent,
     required bool isForSale,
-    required List<File> vehicleImages, // Les 4 photos + intérieur
-    required File registrationPlate,
-    required File registrationDocument,
-    required File insuranceCertificate,
+    double? rentPrice,
+    double? salePrice,
+    required Map<String, File> vehicleImages,
+    required Map<String, File> documents,
   }) async {
     try {
       String uid = _auth.currentUser!.uid;
-      String vehicleId = _firestore.collection('vehicles').doc().id; // Génère un ID unique
+      DocumentReference vehicleRef = _firestore.collection('vehicles').doc();
+      String vehicleId = vehicleRef.id;
 
-      // 1. Upload de toutes les images en parallèle (pour aller plus vite)
+      // 1. Upload des photos
       List<String> imageUrls = [];
-      for (File img in vehicleImages) {
-        String url = await _uploadImage(img, 'vehicles/$vehicleId/photos');
+      for (var entry in vehicleImages.entries) {
+        String url = await _uploadImage(
+          entry.value,
+          'vehicles/$vehicleId/photos/${entry.key}.jpg',
+        );
         imageUrls.add(url);
       }
 
-      String plateUrl = await _uploadImage(registrationPlate, 'vehicles/$vehicleId/documents');
-      String documentUrl = await _uploadImage(registrationDocument, 'vehicles/$vehicleId/documents');
-      String insuranceUrl = await _uploadImage(insuranceCertificate, 'vehicles/$vehicleId/documents');
+      // 2. Upload des documents
+      String plateUrl = await _uploadImage(
+        documents['plate']!,
+        'vehicles/$vehicleId/docs/plate.jpg',
+      );
+      String regDocUrl = await _uploadImage(
+        documents['registration']!,
+        'vehicles/$vehicleId/docs/registration.jpg',
+      );
+      String insuranceUrl = await _uploadImage(
+        documents['insurance']!,
+        'vehicles/$vehicleId/docs/insurance.jpg',
+      );
 
-      // 2. Création du modèle
+      // 3. Création du modèle complet
       final newVehicle = VehicleModel(
         id: vehicleId,
         ownerId: uid,
         brand: brand,
         modelName: modelName,
         year: year,
-        city: "Non définie",
-        address: "Non définie",
+        description: description,
+        city: city,
+        address: address,
         images: imageUrls,
         registrationPlateUrl: plateUrl,
-        registrationDocumentUrl: documentUrl,
+        registrationDocumentUrl: regDocUrl,
         insuranceCertificateUrl: insuranceUrl,
-        validationStatus: 'En attente', // Statut obligatoire selon le cahier des charges
+        validationStatus: "En attente",
         isForRent: isForRent,
+        rentPricePerDay: rentPrice,
         isForSale: isForSale,
-        seats: 5,
-        gearbox: 'Manuelle',
-        fuelType: 'Essence',
-        hasAC: true,
+        salePrice: salePrice,
+        seats: seats,
+        gearbox: gearbox,
+        fuelType: fuelType,
+        hasAC: hasAC,
         reviews: [],
       );
 
-      // 3. Sauvegarde dans Firestore
-      await _firestore.collection('vehicles').doc(vehicleId).set(newVehicle.toJson());
-
+      await vehicleRef.set(newVehicle.toJson());
+      notifyListeners();
     } catch (e) {
-      throw Exception("Erreur lors de la création du véhicule : $e");
+      throw Exception("Erreur lors de l'enregistrement : $e");
     }
+  }
+
+  Stream<List<VehicleModel>> getMyVehicles() {
+    String uid = _auth.currentUser!.uid;
+    return _firestore
+        .collection('vehicles')
+        .where('ownerId', isEqualTo: uid) // Filtre par propriétaire
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => VehicleModel.fromJson(doc.data()))
+              .toList(),
+        );
   }
 }

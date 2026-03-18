@@ -12,7 +12,12 @@
           "package_name": "com.example.kamer_drive_final"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "202489626299-ot5hlisq4s8emm973c0gdm19h1qts12u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCj-8NtzOTSyK8bwUUXlViXwQ9UzglzD5M"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "202489626299-ot5hlisq4s8emm973c0gdm19h1qts12u.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "202489626299-jlojk3ebjrj42dal49fvqmej20ns9qn0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.kamerDriveFinal"
+              }
+            }
+          ]
         }
       }
     }

@@ -70,6 +70,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '202489626299',
     projectId: 'kamer-drive-41b9b',
     storageBucket: 'kamer-drive-41b9b.firebasestorage.app',
+    iosClientId: '202489626299-jlojk3ebjrj42dal49fvqmej20ns9qn0.apps.googleusercontent.com',
     iosBundleId: 'com.example.kamerDriveFinal',
   );
+
 }

@@ -1,4 +1,4 @@
-import 'package:kamer_drive_final/models/review_model.dart';
+import 'review_model.dart';
 
 class VehicleModel {
   final String id;
@@ -8,12 +8,17 @@ class VehicleModel {
   final int year;
   final String city;
   final String address;
-  final List<String> images; // 4 angles + intérieur
-  
+  final List<String> images;
+
+  // NOUVEAU : Description libre par le propriétaire
+  final String description;
+
   // Documents obligatoires pour la validation admin
-  final String registrationPlateUrl; // Plaque d'immatriculation
-  final String registrationDocumentUrl; // Carte grise
-  final String insuranceCertificateUrl; // Attestation d'assurance
+  final String registrationPlateUrl;
+  final String registrationDocumentUrl;
+  final String insuranceCertificateUrl;
+
+  // Statut de validation (En attente, Validé, Rejeté)
   final String validationStatus;
 
   // Configuration Location
@@ -26,14 +31,14 @@ class VehicleModel {
   final bool isForSale;
   final double? salePrice;
 
-  // Spécifications
+  // Spécifications techniques
   final int seats;
   final String gearbox;
   final String fuelType;
   final bool hasAC;
 
-  // NOUVEAU : Liste des ratings et commentaires de la voiture
-  final List<ReviewModel> reviews; 
+  // Évaluations
+  final List<ReviewModel> reviews;
 
   VehicleModel({
     required this.id,
@@ -44,6 +49,7 @@ class VehicleModel {
     required this.city,
     required this.address,
     required this.images,
+    required this.description, // <-- Ajouté ici
     required this.registrationPlateUrl,
     required this.registrationDocumentUrl,
     required this.insuranceCertificateUrl,
@@ -63,7 +69,6 @@ class VehicleModel {
 
   factory VehicleModel.fromJson(Map<String, dynamic> json) {
     return VehicleModel(
-      // ... (Même logique de parsing sécurisée que les autres modèles)
       id: json['id'] ?? '',
       ownerId: json['ownerId'] ?? '',
       brand: json['brand'] ?? '',
@@ -72,6 +77,12 @@ class VehicleModel {
       city: json['city'] ?? '',
       address: json['address'] ?? '',
       images: List<String>.from(json['images'] ?? []),
+
+      // Extraction de la description (avec valeur par défaut)
+      description:
+          json['description'] ??
+          'Aucune description fournie par le propriétaire.',
+
       registrationPlateUrl: json['registrationPlateUrl'] ?? '',
       registrationDocumentUrl: json['registrationDocumentUrl'] ?? '',
       insuranceCertificateUrl: json['insuranceCertificateUrl'] ?? '',
@@ -86,27 +97,41 @@ class VehicleModel {
       gearbox: json['gearbox'] ?? 'Manuelle',
       fuelType: json['fuelType'] ?? 'Essence',
       hasAC: json['hasAC'] ?? true,
-      reviews: (json['reviews'] as List<dynamic>?)?.map((e) => ReviewModel.fromJson(e)).toList() ?? [],
+      reviews:
+          (json['reviews'] as List<dynamic>?)
+              ?.map((e) => ReviewModel.fromJson(e))
+              .toList() ??
+          [],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      // ... (mapping inverse)
       'id': id,
       'ownerId': ownerId,
       'brand': brand,
       'modelName': modelName,
       'year': year,
+      'city': city,
+      'address': address,
       'images': images,
+
+      'description': description, // <-- Sérialisation ici
+
       'registrationPlateUrl': registrationPlateUrl,
       'registrationDocumentUrl': registrationDocumentUrl,
       'insuranceCertificateUrl': insuranceCertificateUrl,
       'validationStatus': validationStatus,
       'isForRent': isForRent,
       'rentPricePerDay': rentPricePerDay,
+      'securityDeposit': securityDeposit,
+      'withDriverOption': withDriverOption,
       'isForSale': isForSale,
       'salePrice': salePrice,
+      'seats': seats,
+      'gearbox': gearbox,
+      'fuelType': fuelType,
+      'hasAC': hasAC,
       'reviews': reviews.map((e) => e.toJson()).toList(),
     };
   }
