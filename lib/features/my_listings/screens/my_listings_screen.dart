@@ -240,7 +240,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -254,30 +254,109 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                       maxLines: 1,
                     ),
 
-                    // --- AFFICHAGE DES DEUX PRIX ---
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Wrap(
+                      spacing: 5,
+                      runSpacing: 5,
                       children: [
                         if (vehicle.isForRent)
-                          Text(
-                            "Location: ${vehicle.rentPricePerDay?.toInt()} FCFA/j",
-                            style: const TextStyle(
-                              color: kPrimaryColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: kPrimaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: kPrimaryColor.withOpacity(0.3),
+                              ),
+                            ),
+                            child: const Text(
+                              "Location",
+                              style: TextStyle(
+                                color: kPrimaryColor,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         if (vehicle.isForSale)
-                          Text(
-                            "Vente: ${vehicle.salePrice?.toInt()} FCFA",
-                            style: TextStyle(
-                              color: Colors.orange.shade700,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.orange.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Text(
+                              "Vente",
+                              style: TextStyle(
+                                color: Colors.orange.shade800,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        if (!vehicle.isForRent && !vehicle.isForSale)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.grey.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Text(
+                              "Privé",
+                              style: TextStyle(
+                                color: Colors.grey.shade700,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                       ],
                     ),
+                    const SizedBox(height: 10),
+
+                    // --- AFFICHAGE DES PRIX OU STATUT PRIVÉ ---
+                    if (vehicle.isForRent && vehicle.rentPricePerDay != null)
+                      Text(
+                        "${vehicle.rentPricePerDay!.toInt()} FCFA /jour",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: kPrimaryColor,
+                          fontSize: 13,
+                        ),
+                      ),
+                    if (vehicle.isForSale && vehicle.salePrice != null)
+                      Text(
+                        "${vehicle.salePrice!.toInt()} FCFA (Total)",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange.shade700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    // NOUVEAU : Message si privé
+                    if (!vehicle.isForRent && !vehicle.isForSale)
+                      Text(
+                        "Non en service (privé)",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                        ),
+                      ),
 
                     Row(
                       children: [
