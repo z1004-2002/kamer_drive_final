@@ -27,7 +27,8 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   final _cityController = TextEditingController();
   final _addressController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _seatsController = TextEditingController(text: "5");
+  final _seatsController = TextEditingController();
+  final _securityDepositController = TextEditingController();
 
   // --- ÉTATS ---
   bool _isForRent = false;
@@ -53,6 +54,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       _addressController,
       _descriptionController,
       _seatsController,
+      _securityDepositController,
     ]) {
       controller.dispose();
     }
@@ -128,6 +130,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
         isForSale: _isForSale,
         rentPrice: double.tryParse(_rentPriceController.text),
         salePrice: double.tryParse(_salePriceController.text),
+        securityDeposit: double.tryParse(_securityDepositController.text),
         vehicleImages: {
           'front': _imgFront!,
           'back': _imgBack!,
@@ -248,6 +251,22 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
               _rentPriceController,
               isNumber: true,
               isHighlight: true,
+            ),
+            const SizedBox(height: 15),
+
+            // --- NOUVEAU CHAMP : CAUTION ---
+            _buildModernTextField(
+              "Caution exigée (FCFA)",
+              Icons.shield_outlined,
+              _securityDepositController,
+              isNumber: true,
+            ),
+            const Padding(
+              padding: EdgeInsets.only(left: 10, top: 5, bottom: 10),
+              child: Text(
+                "Cette somme sera remboursée au locataire s'il n'y a aucun dommage.",
+                style: TextStyle(color: Colors.grey, fontSize: 11),
+              ),
             ),
           ],
           if (_isForSale) ...[

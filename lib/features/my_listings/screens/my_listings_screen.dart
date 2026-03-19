@@ -202,7 +202,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
       ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
-        height: 130, // Légèrement plus haut pour les deux prix
+        height: 130,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),

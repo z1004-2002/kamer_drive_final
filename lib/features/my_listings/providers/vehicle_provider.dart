@@ -8,10 +8,10 @@ import '../../../models/vehicle_model.dart'; // Assure-toi d'avoir ce modèle
 class VehicleProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instanceFor(
-    bucket: "gs://kamer-drive-41b9b.firebasestorage.app",
-  );
-  // final FirebaseStorage _storage = FirebaseStorage.instance;
+  // final FirebaseStorage _storage = FirebaseStorage.instanceFor(
+  //   bucket: "gs://kamer-drive-41b9b.firebasestorage.app",
+  // );
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   // Fonction pour uploader UNE image et récupérer son URL
   Future<String> _uploadImage(File image, String path) async {
@@ -19,7 +19,7 @@ class VehicleProvider with ChangeNotifier {
       Reference ref = _storage.ref().child(path);
       UploadTask uploadTask = ref.putFile(image);
       TaskSnapshot snapshot = await uploadTask.timeout(
-        const Duration(seconds: 20),
+        const Duration(seconds: 90),
         onTimeout: () => throw Exception("Temps d'attente dépassé (Timeout)"),
       );
       return await snapshot.ref.getDownloadURL();
@@ -44,6 +44,7 @@ class VehicleProvider with ChangeNotifier {
     required bool isForSale,
     double? rentPrice,
     double? salePrice,
+    double? securityDeposit,
     required Map<String, File> vehicleImages,
     required Map<String, File> documents,
   }) async {
@@ -98,6 +99,7 @@ class VehicleProvider with ChangeNotifier {
         seats: seats,
         gearbox: gearbox,
         fuelType: fuelType,
+        securityDeposit: securityDeposit,
         hasAC: hasAC,
         reviews: [],
       );

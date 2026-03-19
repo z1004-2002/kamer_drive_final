@@ -101,6 +101,63 @@ void showVehicleDetailsModal(
                               ),
                               const SizedBox(height: 15),
                               _buildSpecs(vehicle, themeColor, lightThemeColor),
+                              if (vehicle.isForRent &&
+                                  vehicle.securityDeposit != null &&
+                                  vehicle.securityDeposit! > 0) ...[
+                                const SizedBox(height: 25),
+                                const Text(
+                                  "Conditions de location",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.all(15),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.shade50,
+                                    borderRadius: BorderRadius.circular(15),
+                                    border: Border.all(
+                                      color: Colors.orange.shade200,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.shield_outlined,
+                                        color: Colors.orange.shade700,
+                                        size: 28,
+                                      ),
+                                      const SizedBox(width: 15),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "Caution (Remboursable)",
+                                              style: TextStyle(
+                                                color: Colors.orange.shade900,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              "${vehicle.securityDeposit!.toInt()} FCFA",
+                                              style: TextStyle(
+                                                color: Colors.orange.shade700,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                               const SizedBox(height: 25),
                               const Text(
                                 "Description",

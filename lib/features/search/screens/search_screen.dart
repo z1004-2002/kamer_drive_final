@@ -708,7 +708,7 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
-        padding: const EdgeInsets.all(12),
+        // padding: const EdgeInsets.all(12),
         height: 110,
         decoration: BoxDecoration(
           color: Colors.white,
@@ -725,14 +725,17 @@ class _SearchScreenState extends State<SearchScreen> {
           children: [
             // IMAGE (Remplaçant l'icône, beau format carré/arrondi)
             Container(
-              width: 90,
+              width: 110,
               height: double.infinity,
               decoration: BoxDecoration(
                 color: lPrimaryColor,
                 borderRadius: BorderRadius.circular(15),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(15),
+                  bottomLeft: Radius.circular(15),
+                ),
                 // Ici on utilise .asset car ce sont nos données statiques
                 child: Image.asset(
                   vehicle.images.isNotEmpty
