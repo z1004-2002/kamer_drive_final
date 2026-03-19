@@ -14,6 +14,16 @@ class MyListingsScreen extends StatefulWidget {
 }
 
 class _MyListingsScreenState extends State<MyListingsScreen> {
+  // --- FONCTION DE RAFRAÎCHISSEMENT ---
+  Future<void> _refreshMyVehicles() async {
+    // Simule un court temps de chargement pour rassurer l'utilisateur
+    // (Le StreamBuilder se met déjà à jour tout seul en arrière-plan)
+    await Future.delayed(const Duration(milliseconds: 1000));
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
@@ -99,27 +109,52 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                 child: StreamBuilder<List<VehicleModel>>(
                   stream: vehicleProvider.getMyVehicles(),
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting)
+                    if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(
                         child: CircularProgressIndicator(color: kPrimaryColor),
                       );
-                    if (snapshot.hasError)
+                    }
+                    if (snapshot.hasError) {
                       return const Center(child: Text("Erreur de chargement."));
-                    if (!snapshot.hasData || snapshot.data!.isEmpty)
-                      return _buildEmptyState(context);
+                    }
 
+                    // CAS 1 : LISTE VIDE AVEC PULL-TO-REFRESH
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return RefreshIndicator(
+                        onRefresh: _refreshMyVehicles,
+                        color: kPrimaryColor,
+                        backgroundColor: Colors.white,
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: SizedBox(
+                            height:
+                                size.height * 0.6, // Pour centrer le message
+                            child: _buildEmptyState(context),
+                          ),
+                        ),
+                      );
+                    }
+
+                    // CAS 2 : LISTE DE VÉHICULES AVEC PULL-TO-REFRESH
                     final vehicles = snapshot.data!;
-                    return ListView.builder(
-                      padding: const EdgeInsets.only(
-                        top: 20,
-                        bottom: 100,
-                        left: 20,
-                        right: 20,
+                    return RefreshIndicator(
+                      onRefresh: _refreshMyVehicles,
+                      color: kPrimaryColor,
+                      backgroundColor: Colors.white,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(
+                          top: 20,
+                          bottom: 100,
+                          left: 20,
+                          right: 20,
+                        ),
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        itemCount: vehicles.length,
+                        itemBuilder: (context, index) =>
+                            _buildManagementCard(vehicles[index]),
                       ),
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: vehicles.length,
-                      itemBuilder: (context, index) =>
-                          _buildManagementCard(vehicles[index]),
                     );
                   },
                 ),
@@ -142,7 +177,6 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
   }
 
   Widget _buildManagementCard(VehicleModel vehicle) {
-    // 1. Couleurs de statut (En attente, Validé...)
     Color statusColor;
     IconData statusIcon;
     switch (vehicle.validationStatus) {
@@ -159,35 +193,16 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
         statusIcon = Icons.hourglass_empty;
     }
 
-    // 2. NOUVELLE LOGIQUE : Type et Prix dynamiques
-    String typeLabel;
-    String priceLabel;
-    Color typeColor;
-    Color typeBgColor;
-
-    if (vehicle.isForRent) {
-      typeLabel = "Location";
-      priceLabel = "${vehicle.rentPricePerDay?.toInt() ?? 0} FCFA/j";
-      typeColor = kPrimaryColor;
-      typeBgColor = kPrimaryColor.withOpacity(0.1);
-    } else if (vehicle.isForSale) {
-      typeLabel = "Vente";
-      priceLabel = "${vehicle.salePrice?.toInt() ?? 0} FCFA";
-      typeColor = Colors.orange.shade700;
-      typeBgColor = Colors.orange.withOpacity(0.1);
-    } else {
-      // Cas de repli : Usage privé / Non spécifié
-      typeLabel = "Privé";
-      priceLabel = "-";
-      typeColor = Colors.grey.shade700;
-      typeBgColor = Colors.grey.withOpacity(0.2);
-    }
-
     return GestureDetector(
-      onTap: () => showVehicleDetailsModal(context, vehicle),
+      onTap: () => showVehicleDetailsModal(
+        context,
+        vehicle,
+        isRentContext: vehicle.isForRent, // Par défaut sur loc si dispo
+        isOwnerView: true,
+      ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
-        height: 120,
+        height: 130, // Légèrement plus haut pour les deux prix
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -215,15 +230,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                   left: Radius.circular(20),
                 ),
                 child: vehicle.images.isNotEmpty
-                    ? Image.network(
-                        vehicle.images.first,
-                        fit: BoxFit.cover,
-                        errorBuilder: (c, e, s) => const Icon(
-                          Icons.directions_car,
-                          size: 40,
-                          color: kPrimaryColor,
-                        ),
-                      )
+                    ? Image.network(vehicle.images.first, fit: BoxFit.cover)
                     : const Icon(
                         Icons.directions_car,
                         size: 40,
@@ -233,73 +240,45 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    Text(
+                      "${vehicle.brand} ${vehicle.modelName}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                      maxLines: 1,
+                    ),
+
+                    // --- AFFICHAGE DES DEUX PRIX ---
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "${vehicle.brand} ${vehicle.modelName}",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: Colors.black87,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          "Année: ${vehicle.year}",
-                          style: TextStyle(
-                            color: Colors.grey.shade500,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        // Tag coloré dynamiquement (Vert, Orange, ou Gris)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: typeBgColor,
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          child: Text(
-                            typeLabel,
-                            style: TextStyle(
-                              color: typeColor,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            priceLabel,
+                        if (vehicle.isForRent)
+                          Text(
+                            "Location: ${vehicle.rentPricePerDay?.toInt()} FCFA/j",
                             style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: Colors.black87,
+                              color: kPrimaryColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
+                        if (vehicle.isForSale)
+                          Text(
+                            "Vente: ${vehicle.salePrice?.toInt()} FCFA",
+                            style: TextStyle(
+                              color: Colors.orange.shade700,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                       ],
                     ),
+
                     Row(
                       children: [
                         Icon(statusIcon, color: statusColor, size: 14),
@@ -318,34 +297,14 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                 ),
               ),
             ),
+            // Menu d'actions (Modifier/Supprimer)
             PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert, color: Colors.grey.shade600),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              onSelected: (value) {
-                /* Action modifier / supprimer */
-              },
-              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                const PopupMenuItem<String>(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      Icon(Icons.edit, size: 20),
-                      SizedBox(width: 10),
-                      Text('Modifier'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem<String>(
+              icon: const Icon(Icons.more_vert),
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'edit', child: Text("Modifier")),
+                const PopupMenuItem(
                   value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete, color: Colors.red, size: 20),
-                      SizedBox(width: 10),
-                      Text('Supprimer', style: TextStyle(color: Colors.red)),
-                    ],
-                  ),
+                  child: Text("Supprimer", style: TextStyle(color: Colors.red)),
                 ),
               ],
             ),
@@ -356,8 +315,16 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return const Center(
-      child: Text("Vous n'avez pas encore enregistré de véhicule."),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.car_rental, size: 60, color: Colors.grey.shade300),
+        const SizedBox(height: 15),
+        const Text(
+          "Vous n'avez pas encore enregistré de véhicule.",
+          style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+        ),
+      ],
     );
   }
 }

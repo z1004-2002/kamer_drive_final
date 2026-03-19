@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../providers/profile_provider.dart'; // <--- IMPORT DU NOUVEAU PROVIDER
+import '../providers/profile_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -180,13 +180,17 @@ class ProfileScreen extends StatelessWidget {
                         _buildMenuItem(
                           Icons.badge_outlined,
                           "Mes documents (Identité/Permis)",
-                          () {},
+                          () {
+                            context.push('/documents');
+                          },
                         ),
                         _buildMenuDivider(),
                         _buildMenuItem(
                           Icons.payment_outlined,
                           "Moyens de paiement",
-                          () {},
+                          () {
+                            _showComingSoonDialog(context);
+                          },
                         ),
                       ]),
 
@@ -195,13 +199,17 @@ class ProfileScreen extends StatelessWidget {
                         _buildMenuItem(
                           Icons.help_outline,
                           "Aide & Support",
-                          () {},
+                          () {
+                            context.push('/help');
+                          },
                         ),
                         _buildMenuDivider(),
                         _buildMenuItem(
                           Icons.privacy_tip_outlined,
                           "Politique de confidentialité",
-                          () {},
+                          () {
+                            context.push('/privacy_policy');
+                          },
                         ),
                       ]),
 
@@ -282,7 +290,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           ElevatedButton(
-            onPressed: () => context.push('/edit_profile'),
+            onPressed: () => context.push('/documents'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange.shade600,
               elevation: 0,
@@ -402,6 +410,61 @@ class ProfileScreen extends StatelessWidget {
             ),
             child: const Text(
               "Se déconnecter",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  } // --- ALERTE BIENTÔT DISPONIBLE ---
+
+  void _showComingSoonDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.rocket_launch,
+                color: Colors.blue.shade600,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 15),
+            const Expanded(
+              child: Text(
+                "Bientôt disponible",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          "La gestion sécurisée des moyens de paiement (Mobile Money, Cartes Bancaires) est en cours de développement.\n\nRestez à l'écoute pour la prochaine mise à jour !",
+          style: TextStyle(height: 1.5, fontSize: 14, color: Colors.black87),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kPrimaryColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 0,
+            ),
+            child: const Text(
+              "J'ai compris",
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,

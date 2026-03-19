@@ -9,10 +9,10 @@ class UserModel {
   final String email;
   final String phone;
   final String avatarUrl;
-  
+
   // Infos Sécurité / Vérification
   final String address;
-  final List<String> idDocuments;
+  final Map<String, dynamic> idDocuments;
   final List<String>? proofOfAddress;
   final List<ReviewModel> reviews;
 
@@ -51,19 +51,29 @@ class UserModel {
       phone: json['phone'] ?? '',
       avatarUrl: json['avatarUrl'] ?? '',
       address: json['address'] ?? '',
-      idDocuments: List<String>.from(json['idDocuments'] ?? []),
-      proofOfAddress: json['proofOfAddress'] != null ? List<String>.from(json['proofOfAddress']) : null,
-      reviews: (json['reviews'] as List<dynamic>?)?.map((e) => ReviewModel.fromJson(e)).toList() ?? [],
+      idDocuments: (json['idDocuments'] is Map)
+          ? Map<String, dynamic>.from(json['idDocuments'])
+          : <String, dynamic>{},
+      proofOfAddress: json['proofOfAddress'] != null
+          ? List<String>.from(json['proofOfAddress'])
+          : null,
+      reviews:
+          (json['reviews'] as List<dynamic>?)
+              ?.map((e) => ReviewModel.fromJson(e))
+              .toList() ??
+          [],
       isFirstConnection: json['isFirstConnection'] ?? true,
       hasCompletedProfiling: json['hasCompletedProfiling'] ?? false,
       intents: List<String>.from(json['intents'] ?? []),
       ownsVehicle: json['ownsVehicle'] ?? false,
-      
+
       // --- LA CORRECTION EST ICI ---
-      createdAt: json['createdAt'] != null 
-          ? (json['createdAt'] is Timestamp 
-              ? (json['createdAt'] as Timestamp).toDate() // Si c'est un Timestamp Firebase
-              : DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()) // Si c'est un String
+      createdAt: json['createdAt'] != null
+          ? (json['createdAt'] is Timestamp
+                ? (json['createdAt'] as Timestamp)
+                      .toDate() // Si c'est un Timestamp Firebase
+                : DateTime.tryParse(json['createdAt'].toString()) ??
+                      DateTime.now()) // Si c'est un String
           : DateTime.now(),
     );
   }
@@ -80,7 +90,7 @@ class UserModel {
       'idDocuments': idDocuments,
       'proofOfAddress': proofOfAddress,
       'reviews': reviews.map((e) => e.toJson()).toList(),
- 
+
       'isFirstConnection': isFirstConnection,
       'hasCompletedProfiling': hasCompletedProfiling,
       'intents': intents,

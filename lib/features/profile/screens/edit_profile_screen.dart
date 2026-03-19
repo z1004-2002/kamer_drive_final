@@ -2,10 +2,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // <--- NOUVEL IMPORT NÉCESSAIRE
+import 'package:firebase_auth/firebase_auth.dart'; // <--- NOUVEL IMPORT NÉCESSAIRE
 import 'package:image_picker/image_picker.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
 import 'package:kamer_drive_final/core/utils/snackbar_utils.dart';
-import '../providers/profile_provider.dart'; // <--- IMPORT DU NOUVEAU PROVIDER
+import '../providers/profile_provider.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -22,13 +24,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
 
+  // --- NOUVEAUX ÉTATS POUR LE VÉHICULE ---
+  bool _ownsVehicle = false;
+  bool _hasRegisteredVehicles =
+      false; // Permet de savoir si on doit bloquer le bouton
+
   File? _newAvatarFile;
   final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
-    // On pré-remplit les champs
     final currentUser = Provider.of<ProfileProvider>(
       context,
       listen: false,
@@ -38,16 +44,49 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _lastNameController.text = currentUser.lastName;
       _phoneController.text = currentUser.phone;
       _addressController.text = currentUser.address;
+      // On récupère sa valeur actuelle
+      _ownsVehicle = currentUser.ownsVehicle;
     }
+
+    // On lance la vérification en arrière-plan
+    _checkIfUserHasVehicles();
   }
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _phoneController.dispose();
-    _addressController.dispose();
+    for (var controller in [
+      _firstNameController,
+      _lastNameController,
+      _phoneController,
+      _addressController,
+    ]) {
+      controller.dispose();
+    }
     super.dispose();
+  }
+
+  // --- VÉRIFICATION FIRESTORE ---
+  Future<void> _checkIfUserHasVehicles() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      // On cherche juste s'il y a au moins 1 véhicule à son nom (limit(1) est très rapide)
+      final snapshot = await FirebaseFirestore.instance
+          .collection('vehicles')
+          .where('ownerId', isEqualTo: uid)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty && mounted) {
+        setState(() {
+          _hasRegisteredVehicles = true;
+          _ownsVehicle = true; // On force la valeur à true par sécurité
+        });
+      }
+    } catch (e) {
+      debugPrint("Erreur lors de la vérification des véhicules : $e");
+    }
   }
 
   Future<void> _pickAvatar() async {
@@ -60,10 +99,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _saveProfile() async {
     if (_firstNameController.text.isEmpty || _lastNameController.text.isEmpty) {
-      return SnackbarUtils.showWarning(
+      SnackbarUtils.showWarning(
         context,
-        "Le nom et le prénom sont obligatoires.",
+        "Le prénom et le nom sont obligatoires.",
       );
+      return;
     }
 
     setState(() => _isLoading = true);
@@ -74,15 +114,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         lastName: _lastNameController.text.trim(),
         phone: _phoneController.text.trim(),
         address: _addressController.text.trim(),
+        ownsVehicle: _ownsVehicle, // <--- On envoie la valeur
         newAvatarFile: _newAvatarFile,
       );
 
       if (mounted) {
-        SnackbarUtils.showSuccess(context, "Profil mis à jour !");
+        SnackbarUtils.showSuccess(context, "Profil mis à jour avec succès !");
         context.pop();
       }
     } catch (e) {
-      if (mounted) SnackbarUtils.showError(context, e.toString());
+      if (mounted) {
+        SnackbarUtils.showError(
+          context,
+          "Erreur lors de la mise à jour : ${e.toString().replaceAll('Exception: ', '')}",
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -95,6 +141,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     return Scaffold(
       backgroundColor: kBackgroundColor,
+      bottomNavigationBar: _buildNotabeSaveButton(),
       body: Stack(
         children: [
           Positioned(
@@ -143,47 +190,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(
-                                Icons.arrow_back_ios_new,
-                                color: Colors.white,
-                              ),
-                              onPressed: () => context.pop(),
-                            ),
-                            const SizedBox(width: 10),
-                            const Text(
-                              "Infos Personnelles",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                        IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new,
+                            color: Colors.white,
+                          ),
+                          onPressed: () => context.pop(),
                         ),
-                        TextButton(
-                          onPressed: _isLoading ? null : _saveProfile,
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text(
-                                  "Enregistrer",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          "Infos Personnelles",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -198,6 +220,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   child: Column(
                     children: [
                       const SizedBox(height: 20),
+
                       GestureDetector(
                         onTap: _pickAvatar,
                         child: Stack(
@@ -242,11 +265,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                       const SizedBox(height: 10),
                       const Text(
-                        "Appuyez pour modifier",
+                        "Appuyez pour modifier la photo",
                         style: TextStyle(color: Colors.grey, fontSize: 12),
                       ),
 
                       const SizedBox(height: 40),
+
                       _buildModernTextField(
                         "Prénom",
                         Icons.person,
@@ -260,23 +284,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                       const SizedBox(height: 15),
 
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: TextField(
-                          enabled: false,
-                          decoration: InputDecoration(
-                            hintText: currentUser?.email ?? "Email",
-                            prefixIcon: const Icon(
-                              Icons.email,
-                              color: Colors.grey,
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.all(15),
-                          ),
-                        ),
+                      _buildReadOnlyTextField(
+                        currentUser?.email ?? "email@exemple.com",
+                        Icons.email,
                       ),
                       const Padding(
                         padding: EdgeInsets.only(left: 10, top: 5),
@@ -302,7 +312,64 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         Icons.location_on,
                         _addressController,
                       ),
-                      const SizedBox(height: 40),
+
+                      const SizedBox(height: 25),
+
+                      // --- NOUVEAU WIDGET : LE SWITCH PROPRIÉTAIRE ---
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(
+                            color: _hasRegisteredVehicles
+                                ? Colors.orange.shade200
+                                : Colors.transparent,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: SwitchListTile(
+                          title: const Text(
+                            "Je possède un véhicule",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          subtitle: _hasRegisteredVehicles
+                              ? const Text(
+                                  "Option verrouillée : vous avez déjà enregistré des véhicules.",
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.orange,
+                                  ),
+                                )
+                              : const Text(
+                                  "Activez si vous comptez proposer des véhicules.",
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                          value: _ownsVehicle,
+                          activeColor: kPrimaryColor,
+                          // Si _hasRegisteredVehicles est vrai, onChanged est null, ce qui désactive le switch
+                          onChanged: _hasRegisteredVehicles
+                              ? null
+                              : (value) {
+                                  setState(() {
+                                    _ownsVehicle = value;
+                                  });
+                                },
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
                     ],
                   ),
                 ),
@@ -310,6 +377,55 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildNotabeSaveButton() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : _saveProfile,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kPrimaryColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              elevation: 4,
+            ),
+            child: _isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Text(
+                    "Enregistrer les modifications",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+          ),
+        ),
       ),
     );
   }
@@ -344,6 +460,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           filled: true,
           fillColor: Colors.white,
+          contentPadding: const EdgeInsets.all(15),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReadOnlyTextField(String value, IconData icon) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: TextField(
+        enabled: false,
+        decoration: InputDecoration(
+          hintText: value,
+          prefixIcon: Icon(icon, color: Colors.grey),
+          border: InputBorder.none,
           contentPadding: const EdgeInsets.all(15),
         ),
       ),

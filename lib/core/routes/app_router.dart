@@ -5,7 +5,10 @@ import 'package:kamer_drive_final/features/home/screens/main_screen.dart';
 import 'package:kamer_drive_final/features/my_listings/screens/add_vehicle_screen.dart';
 import 'package:kamer_drive_final/features/my_listings/screens/my_listings_screen.dart';
 import 'package:kamer_drive_final/features/onboarding/screens/profiling_screen.dart';
+import 'package:kamer_drive_final/features/profile/screens/document_upload_screen.dart';
 import 'package:kamer_drive_final/features/profile/screens/edit_profile_screen.dart';
+import 'package:kamer_drive_final/features/profile/screens/help_support_screen.dart';
+import 'package:kamer_drive_final/features/profile/screens/privacy_policy_screen.dart';
 
 // Importe tes écrans actuels
 import '../../features/onboarding/screens/splash_screen.dart';
@@ -72,6 +75,21 @@ class AppRouter {
         path: '/edit_profile',
         name: 'edit_profile',
         builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/documents',
+        name: 'documents',
+        builder: (context, state) => const DocumentUploadScreen(),
+      ),
+      GoRoute(
+        path: '/help',
+        name: 'help',
+        builder: (context, state) => const HelpSupportScreen(),
+      ),
+      GoRoute(
+        path: '/privacy_policy',
+        name: 'privacy_policy',
+        builder: (context, state) => const PrivacyPolicyScreen(),
       ),
     ],
 

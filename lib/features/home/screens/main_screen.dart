@@ -24,7 +24,7 @@ class _MainScreenState extends State<MainScreen> {
     phone: '690000000',
     avatarUrl: 'https://picsum.photos/200',
     address: '',
-    idDocuments: [],
+    idDocuments: {},
     reviews: [],
     isFirstConnection: false,
     hasCompletedProfiling: true,

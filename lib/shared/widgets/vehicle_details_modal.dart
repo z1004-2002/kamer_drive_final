@@ -1,32 +1,32 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
 import '../../../models/vehicle_model.dart';
 
-void showVehicleDetailsModal(BuildContext context, VehicleModel vehicle) {
+void showVehicleDetailsModal(
+  BuildContext context,
+  VehicleModel vehicle, {
+  bool isRentContext = true,
+  bool isOwnerView = false, // Nouveau paramètre pour distinguer la vue
+}) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (context) {
       int currentImageIndex = 0;
+      final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? "";
+      final bool isMyVehicle = vehicle.ownerId == currentUserId;
 
       return StatefulBuilder(
         builder: (BuildContext context, StateSetter setModalState) {
-          // --- NOUVELLE LOGIQUE DE PRIX ---
-          String displayPrice = "Non défini";
-          String priceLabel = "Prix";
-
-          if (vehicle.isForRent && vehicle.rentPricePerDay != null) {
-            displayPrice = "${vehicle.rentPricePerDay!.toInt()} FCFA";
-            priceLabel = "Prix par jour";
-          } else if (vehicle.isForSale && vehicle.salePrice != null) {
-            displayPrice = "${vehicle.salePrice!.toInt()} FCFA";
-            priceLabel = "Prix de vente";
-          } else {
-            // S'il n'est ni en vente ni en location
-            displayPrice = "-";
-            priceLabel = "Usage privé";
-          }
+          // --- LOGIQUE DE COULEUR ---
+          Color themeColor = isRentContext
+              ? kPrimaryColor
+              : Colors.orange.shade700;
+          Color lightThemeColor = isRentContext
+              ? lPrimaryColor
+              : Colors.orange.shade50;
 
           double rating = vehicle.reviews.isEmpty
               ? 4.8
@@ -58,188 +58,24 @@ void showVehicleDetailsModal(BuildContext context, VehicleModel vehicle) {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 20),
-
-                        // 1. CAROUSEL D'IMAGES
-                        SizedBox(
-                          height: 250,
-                          child: Stack(
-                            alignment: Alignment.bottomCenter,
-                            children: [
-                              PageView.builder(
-                                physics: const BouncingScrollPhysics(),
-                                onPageChanged: (index) => setModalState(
-                                  () => currentImageIndex = index,
-                                ),
-                                itemCount: vehicle.images.isNotEmpty
-                                    ? vehicle.images.length
-                                    : 1,
-                                itemBuilder: (context, index) {
-                                  if (vehicle.images.isEmpty) {
-                                    return Container(
-                                      margin: const EdgeInsets.symmetric(
-                                        horizontal: 20,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: lPrimaryColor,
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: const Icon(
-                                        Icons.directions_car,
-                                        size: 80,
-                                        color: kPrimaryColor,
-                                      ),
-                                    );
-                                  }
-                                  return Container(
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(20),
-                                      color: Colors.grey.shade200,
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(20),
-                                      child: Image.network(
-                                        vehicle.images[index],
-                                        fit: BoxFit.cover,
-                                        width: double.infinity,
-                                        errorBuilder: (c, e, s) => const Icon(
-                                          Icons.broken_image,
-                                          size: 50,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                              if (vehicle.images.length > 1)
-                                Positioned(
-                                  bottom: 15,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 5,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.4),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: List.generate(
-                                        vehicle.images.length,
-                                        (index) => AnimatedContainer(
-                                          duration: const Duration(
-                                            milliseconds: 300,
-                                          ),
-                                          margin: const EdgeInsets.symmetric(
-                                            horizontal: 3,
-                                          ),
-                                          height: 6,
-                                          width: currentImageIndex == index
-                                              ? 15
-                                              : 6,
-                                          decoration: BoxDecoration(
-                                            color: currentImageIndex == index
-                                                ? Colors.white
-                                                : Colors.white54,
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
+                        // 1. CAROUSEL (Ton style)
+                        _buildCarousel(
+                          vehicle,
+                          currentImageIndex,
+                          setModalState,
+                          themeColor,
+                          lightThemeColor,
                         ),
 
-                        // 2. INFORMATIONS DE LA VOITURE
                         Padding(
                           padding: const EdgeInsets.all(20),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      "${vehicle.brand} ${vehicle.modelName}",
-                                      style: const TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 5,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.amber.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.star,
-                                          color: Colors.amber,
-                                          size: 18,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          rating.toStringAsFixed(1),
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.orange,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              _buildHeader(vehicle, rating),
                               const SizedBox(height: 5),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.location_on,
-                                    color: Colors.grey,
-                                    size: 16,
-                                  ),
-                                  Text(
-                                    " ${vehicle.city}",
-                                    style: const TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 15),
-                                  const Icon(
-                                    Icons.calendar_month,
-                                    color: Colors.grey,
-                                    size: 16,
-                                  ),
-                                  Text(
-                                    " ${vehicle.year}",
-                                    style: const TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              _buildLocationAndYear(vehicle),
                               const SizedBox(height: 25),
-
                               const Text(
                                 "Caractéristiques",
                                 style: TextStyle(
@@ -248,29 +84,7 @@ void showVehicleDetailsModal(BuildContext context, VehicleModel vehicle) {
                                 ),
                               ),
                               const SizedBox(height: 15),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  _buildSpecIcon(
-                                    Icons.airline_seat_recline_normal,
-                                    "${vehicle.seats} Places",
-                                  ),
-                                  _buildSpecIcon(
-                                    Icons.settings,
-                                    vehicle.gearbox,
-                                  ),
-                                  _buildSpecIcon(
-                                    Icons.local_gas_station,
-                                    vehicle.fuelType,
-                                  ),
-                                  _buildSpecIcon(
-                                    Icons.ac_unit,
-                                    vehicle.hasAC ? "Climatisé" : "Sans Clim",
-                                  ),
-                                ],
-                              ),
-
+                              _buildSpecs(vehicle, themeColor, lightThemeColor),
                               const SizedBox(height: 25),
                               const Text(
                                 "Description",
@@ -297,12 +111,9 @@ void showVehicleDetailsModal(BuildContext context, VehicleModel vehicle) {
                   ),
                 ),
 
-                // --- BOUTON FIXE EN BAS ---
+                // --- 3. BARRE FIXE DYNAMIQUE ---
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 15,
-                  ),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     boxShadow: [
@@ -317,51 +128,67 @@ void showVehicleDetailsModal(BuildContext context, VehicleModel vehicle) {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              priceLabel,
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
-                              ),
-                            ),
-                            Text(
-                              displayPrice,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: kPrimaryColor,
-                              ),
-                            ),
-                          ],
+                        // ZONE PRIX
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Si Propriétaire : on montre tout. Si Client : on montre selon le contexte Home.
+                              if (isOwnerView ||
+                                  (isRentContext && vehicle.isForRent))
+                                Text(
+                                  "${vehicle.rentPricePerDay?.toInt()} FCFA/j (Loc.)",
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: kPrimaryColor,
+                                  ),
+                                ),
+                              if (isOwnerView ||
+                                  (!isRentContext && vehicle.isForSale))
+                                Text(
+                                  "${vehicle.salePrice?.toInt()} FCFA (Vente)",
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange.shade700,
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
-                        // Si le véhicule n'est ni à louer ni à vendre, on peut désactiver ou cacher le bouton
-                        if (vehicle.isForRent || vehicle.isForSale)
-                          ElevatedButton(
-                            onPressed: () {
-                              /* Action */
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: kPrimaryColor,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 30,
-                                vertical: 15,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
+
+                        // BOUTON DYNAMIQUE (Modifier ou Continuer/Contacter)
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            if (isMyVehicle) {
+                              // Logique de modification
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isMyVehicle
+                                ? Colors.black87
+                                : themeColor,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 25,
+                              vertical: 15,
                             ),
-                            child: const Text(
-                              "Continuer",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
                             ),
                           ),
+                          child: Text(
+                            isMyVehicle
+                                ? "Modifier"
+                                : (isRentContext ? "Continuer" : "Contacter"),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -375,16 +202,152 @@ void showVehicleDetailsModal(BuildContext context, VehicleModel vehicle) {
   );
 }
 
-Widget _buildSpecIcon(IconData icon, String label) {
+// --- SOUS-WIDGETS POUR LA CLARTÉ ---
+
+Widget _buildCarousel(
+  VehicleModel vehicle,
+  int currentIndex,
+  StateSetter setState,
+  Color theme,
+  Color lightTheme,
+) {
+  return SizedBox(
+    height: 250,
+    child: Stack(
+      alignment: Alignment.bottomCenter,
+      children: [
+        PageView.builder(
+          onPageChanged: (index) => setState(() => currentIndex = index),
+          itemCount: vehicle.images.isNotEmpty ? vehicle.images.length : 1,
+          itemBuilder: (context, index) {
+            if (vehicle.images.isEmpty) {
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                decoration: BoxDecoration(
+                  color: lightTheme,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(Icons.directions_car, size: 80, color: theme),
+              );
+            }
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: Colors.grey.shade200,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.network(
+                  vehicle.images[index],
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                ),
+              ),
+            );
+          },
+        ),
+        // Dots... (ton code dots ici)
+      ],
+    ),
+  );
+}
+
+Widget _buildHeader(VehicleModel vehicle, double rating) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Expanded(
+        child: Text(
+          "${vehicle.brand} ${vehicle.modelName}",
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+      ),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: Colors.amber.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.star, color: Colors.amber, size: 18),
+            const SizedBox(width: 4),
+            Text(
+              rating.toStringAsFixed(1),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.orange,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+Widget _buildLocationAndYear(VehicleModel vehicle) {
+  return Row(
+    children: [
+      const Icon(Icons.location_on, color: Colors.grey, size: 16),
+      Text(
+        " ${vehicle.city}",
+        style: const TextStyle(color: Colors.grey, fontSize: 14),
+      ),
+      const SizedBox(width: 15),
+      const Icon(Icons.calendar_month, color: Colors.grey, size: 16),
+      Text(
+        " ${vehicle.year}",
+        style: const TextStyle(color: Colors.grey, fontSize: 14),
+      ),
+    ],
+  );
+}
+
+Widget _buildSpecs(VehicleModel vehicle, Color theme, Color lightTheme) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      _buildSpecIcon(
+        Icons.airline_seat_recline_normal,
+        "${vehicle.seats} Pl.",
+        theme,
+        lightTheme,
+      ),
+      _buildSpecIcon(Icons.settings, vehicle.gearbox, theme, lightTheme),
+      _buildSpecIcon(
+        Icons.local_gas_station,
+        vehicle.fuelType,
+        theme,
+        lightTheme,
+      ),
+      _buildSpecIcon(
+        Icons.ac_unit,
+        vehicle.hasAC ? "Clim" : "Non",
+        theme,
+        lightTheme,
+      ),
+    ],
+  );
+}
+
+Widget _buildSpecIcon(
+  IconData icon,
+  String label,
+  Color iconColor,
+  Color bgColor,
+) {
   return Column(
     children: [
       Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: lPrimaryColor,
+          color: bgColor,
           borderRadius: BorderRadius.circular(15),
         ),
-        child: Icon(icon, color: kPrimaryColor, size: 24),
+        child: Icon(icon, color: iconColor, size: 24),
       ),
       const SizedBox(height: 8),
       Text(
