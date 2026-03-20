@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
 import '../../../models/vehicle_model.dart';
 
@@ -481,11 +482,17 @@ Widget _buildBottomActionArea(
           // --- BOUTON D'ACTION ---
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context);
+              // Navigator.pop(context);
               if (isMyVehicle) {
                 // TODO: Naviguer vers l'écran d'édition
               } else if (!isPrivate) {
-                // TODO: Logique de réservation ou de contact si ce n'est pas privé
+                if (isRentContext) {
+                  // LOCATION : Ouvre l'écran de Réservation
+                  context.push('/rental_booking', extra: vehicle);
+                } else {
+                  // VENTE : Ouvre l'écran de Vente
+                  context.push('/sale_booking', extra: vehicle);
+                }
               }
             },
             style: ElevatedButton.styleFrom(
@@ -499,7 +506,7 @@ Widget _buildBottomActionArea(
             child: Text(
               isMyVehicle
                   ? "Modifier"
-                  : (isRentContext ? "Continuer" : "Contacter"),
+                  : (isRentContext ? "Réserver" : "Acheter"),
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
