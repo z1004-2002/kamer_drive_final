@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
+import 'package:kamer_drive_final/features/history/screens/history_screen.dart';
 import 'package:kamer_drive_final/features/profile/screens/profile_screen.dart';
 import 'package:kamer_drive_final/features/search/screens/search_screen.dart';
 import 'package:kamer_drive_final/models/user_model.dart';
@@ -54,7 +55,7 @@ class _MainScreenState extends State<MainScreen> {
       HomeScreen(onNavigateToSearch: () => navigateToTab(1)),
       const SearchScreen(),
       const SizedBox.shrink(), // Dummy pour l'index 2 (le bouton +)
-      const Center(child: Text("Historique")), // const HistoryScreen(),
+      const HistoryScreen(),
       ProfileScreen(),
     ];
   }
