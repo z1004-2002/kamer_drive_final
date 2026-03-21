@@ -113,6 +113,7 @@ class BookingProvider with ChangeNotifier {
       Future<UnifiedHistoryItem?> buildItem(
         DocumentSnapshot doc,
         String type,
+        bool isMyListing, // <-- This parameter determines if it's an owner view
       ) async {
         final data = doc.data() as Map<String, dynamic>;
         final vehicleId = data['vehicleId'];
@@ -160,24 +161,28 @@ class BookingProvider with ChangeNotifier {
           createdAt: data['createdAt'] != null
               ? DateTime.parse(data['createdAt'])
               : DateTime.now(),
+          isMyListing: isMyListing, // <-- Pass the parameter here!
         );
       }
 
       // C. Remplissage des listes
+      // --- Vues Client (isMyListing = false) ---
       for (var doc in rentClientSnap.docs) {
-        final item = await buildItem(doc, "Location");
+        final item = await buildItem(doc, "Location", false);
         if (item != null) tempClient.add(item);
       }
       for (var doc in saleClientSnap.docs) {
-        final item = await buildItem(doc, "Vente");
+        final item = await buildItem(doc, "Vente", false);
         if (item != null) tempClient.add(item);
       }
+
+      // --- Vues Propriétaire (isMyListing = true) ---
       for (var doc in rentOwnerSnap.docs) {
-        final item = await buildItem(doc, "Location");
+        final item = await buildItem(doc, "Location", true);
         if (item != null) tempOwner.add(item);
       }
       for (var doc in saleOwnerSnap.docs) {
-        final item = await buildItem(doc, "Vente");
+        final item = await buildItem(doc, "Vente", true);
         if (item != null) tempOwner.add(item);
       }
 

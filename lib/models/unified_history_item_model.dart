@@ -1,7 +1,6 @@
 class UnifiedHistoryItem {
-  final String bookingId; // NOUVEAU : ID de la réservation
-  final String
-  vehicleId; // NOUVEAU : ID de la voiture (pour remettre isAvailable à true)
+  final String bookingId; // ID de la réservation
+  final String vehicleId; // ID de la voiture (pour remettre isAvailable à true)
   final String type; // "Location" ou "Vente"
   final String status;
   final String vehicleName;
@@ -11,7 +10,8 @@ class UnifiedHistoryItem {
   final dynamic originalModel;
   final String ownerId;
   final String clientId;
-  final DateTime createdAt; // Pour trier du plus récent au plus ancien
+  final DateTime createdAt;
+  final bool isMyListing;
 
   UnifiedHistoryItem({
     required this.bookingId,
@@ -26,5 +26,6 @@ class UnifiedHistoryItem {
     required this.ownerId,
     required this.clientId,
     required this.createdAt,
+    required this.isMyListing,
   });
 }

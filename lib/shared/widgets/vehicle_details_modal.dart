@@ -239,7 +239,6 @@ void showVehicleDetailsModal(
                                 ),
                               ),
 
-                              // --- NOUVEAU : ENCART PROPRIÉTAIRE ---
                               if (!isMyVehicle) ...[
                                 const SizedBox(height: 25),
                                 const Text(
@@ -286,15 +285,24 @@ Widget _buildOwnerInfo(String ownerId, Color themeColor) {
   return FutureBuilder<DocumentSnapshot>(
     future: FirebaseFirestore.instance.collection('users').doc(ownerId).get(),
     builder: (context, snapshot) {
+      // 1. État de chargement
       if (snapshot.connectionState == ConnectionState.waiting) {
-        return Center(child: CircularProgressIndicator(color: themeColor));
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: CircularProgressIndicator(color: themeColor),
+          ),
+        );
       }
+
+      // 2. Utilisateur introuvable
       if (!snapshot.hasData || !snapshot.data!.exists) {
         return Container(
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
             color: Colors.grey.shade50,
             borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: Colors.grey.shade200),
           ),
           child: const Text(
             "Informations du propriétaire indisponibles.",
@@ -303,6 +311,7 @@ Widget _buildOwnerInfo(String ownerId, Color themeColor) {
         );
       }
 
+      // 3. Affichage des données
       final data = snapshot.data!.data() as Map<String, dynamic>;
       final name = "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}"
           .trim();
@@ -327,7 +336,7 @@ Widget _buildOwnerInfo(String ownerId, Color themeColor) {
         child: Row(
           children: [
             CircleAvatar(
-              radius: 30,
+              radius: 28,
               backgroundColor: themeColor.withOpacity(0.1),
               backgroundImage: avatarUrl.isNotEmpty
                   ? NetworkImage(avatarUrl)
@@ -348,32 +357,56 @@ Widget _buildOwnerInfo(String ownerId, Color themeColor) {
                       fontSize: 16,
                       color: Colors.black87,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Icons.phone, size: 14, color: Colors.grey.shade600),
-                      const SizedBox(width: 5),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.phone,
+                          size: 12,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Text(
                         phone,
                         style: TextStyle(
-                          color: Colors.grey.shade600,
+                          color: Colors.grey.shade700,
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Icons.email, size: 14, color: Colors.grey.shade600),
-                      const SizedBox(width: 5),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.email,
+                          size: 12,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           email,
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: Colors.grey.shade700,
                             fontSize: 13,
                           ),
                           maxLines: 1,

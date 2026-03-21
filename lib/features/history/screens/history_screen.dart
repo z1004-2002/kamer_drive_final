@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:kamer_drive_final/models/unified_history_item_model.dart';
+import 'package:kamer_drive_final/shared/widgets/booking_details_modal.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
 import 'package:kamer_drive_final/core/utils/snackbar_utils.dart';
-import '../../booking/providers/booking_provider.dart';
+// NOUVEAUX IMPORTS
+import '../providers/history_provider.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -28,7 +28,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BookingProvider>().fetchUserHistory();
+      context
+          .read<HistoryProvider>()
+          .fetchUserHistory(); // Remplacé par HistoryProvider
     });
   }
 
@@ -60,7 +62,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ? 'rental_bookings'
           : 'sale_bookings';
 
-      await context.read<BookingProvider>().updateBookingStatus(
+      await context.read<HistoryProvider>().updateBookingStatus(
         collectionName: collection,
         bookingId: item.bookingId,
         newStatus: newStatus,
@@ -75,7 +77,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  // --- NOUVEAU : BOÎTE DE DIALOGUE DE CONFIRMATION ---
   void _showConfirmationDialog({
     required String title,
     required String message,
@@ -98,8 +99,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(ctx); // Ferme la boîte de dialogue
-              onConfirm(); // Exécute l'action de mise à jour Firestore
+              Navigator.pop(ctx);
+              onConfirm();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: isDestructive ? Colors.red : kPrimaryColor,
@@ -124,12 +125,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
-    final bookingProvider = context.watch<BookingProvider>();
+    final historyProvider = context
+        .watch<HistoryProvider>(); // Remplacé par HistoryProvider
 
     List<UnifiedHistoryItem> sourceList = _isOwnerMode
-        ? bookingProvider.ownerHistory
-        : bookingProvider.clientHistory;
-
+        ? historyProvider.ownerHistory
+        : historyProvider.clientHistory;
     List<UnifiedHistoryItem> displayedList = sourceList
         .where((item) => _matchesFilter(item.status))
         .toList();
@@ -153,7 +154,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
           Column(
             children: [
-              // --- HEADER ---
+              // --- HEADER INCHANGÉ ---
               Container(
                 padding: EdgeInsets.only(
                   top: MediaQuery.of(context).padding.top,
@@ -195,8 +196,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                     ),
                     const SizedBox(height: 15),
-
-                    // SÉLECTEUR RÔLE
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 20),
                       padding: const EdgeInsets.all(4),
@@ -264,7 +263,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               ),
 
-              // --- BARRE DE FILTRES ---
+              // --- BARRE DE FILTRES INCHANGÉE ---
               Container(
                 height: 45,
                 margin: const EdgeInsets.only(top: 15),
@@ -313,7 +312,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
               // --- LISTE DES RÉSULTATS ---
               Expanded(
-                child: bookingProvider.isLoadingHistory
+                child: historyProvider.isLoadingHistory
                     ? const Center(
                         child: CircularProgressIndicator(color: kPrimaryColor),
                       )
@@ -321,7 +320,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ? _buildEmptyMessage()
                     : RefreshIndicator(
                         onRefresh: () =>
-                            context.read<BookingProvider>().fetchUserHistory(),
+                            context.read<HistoryProvider>().fetchUserHistory(),
                         color: kPrimaryColor,
                         child: ListView.builder(
                           physics: const AlwaysScrollableScrollPhysics(
@@ -380,102 +379,107 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Container(
-                  width: 90,
-                  height: 90,
-                  decoration: BoxDecoration(
-                    color: lPrimaryColor,
-                    borderRadius: BorderRadius.circular(15),
+          // NOUVEAU : Enveloppe le haut de la carte dans un GestureDetector pour ouvrir la modale !
+          GestureDetector(
+            onTap: () => showBookingDetailsModal(context, item),
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      color: lPrimaryColor,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(15),
+                      child: item.imageUrl.startsWith('http')
+                          ? Image.network(item.imageUrl, fit: BoxFit.cover)
+                          : Image.asset(
+                              'assets/images/placeholder.png',
+                              fit: BoxFit.cover,
+                            ),
+                    ),
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(15),
-                    child: item.imageUrl.startsWith('http')
-                        ? Image.network(item.imageUrl, fit: BoxFit.cover)
-                        : Image.asset(
-                            'assets/images/placeholder.png',
-                            fit: BoxFit.cover,
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 15),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              item.vehicleName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                item.vehicleName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: typeColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                item.type,
+                                style: TextStyle(
+                                  color: typeColor,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          item.dateInfo,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: typeColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              item.type,
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          "${item.totalPrice.toInt()} FCFA",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Row(
+                          children: [
+                            Icon(Icons.circle, color: statusColor, size: 8),
+                            const SizedBox(width: 5),
+                            Text(
+                              item.status,
                               style: TextStyle(
-                                color: typeColor,
-                                fontSize: 10,
+                                color: statusColor,
+                                fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        item.dateInfo,
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 12,
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        "${item.totalPrice.toInt()} FCFA",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Row(
-                        children: [
-                          Icon(Icons.circle, color: statusColor, size: 8),
-                          const SizedBox(width: 5),
-                          Text(
-                            item.status,
-                            style: TextStyle(
-                              color: statusColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           _buildActionButtons(item),
@@ -484,14 +488,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  // --- ACTIONS BRANCHÉES SUR LA BOÎTE DE DIALOGUE ---
   Widget _buildActionButtons(UnifiedHistoryItem item) {
     List<Widget> buttons = [];
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    bool isMyListing = item.ownerId == currentUserId;
+    bool isMyListing = item.isMyListing;
 
     if (!isMyListing) {
-      // --- VUE CLIENT ---
       if (item.type == 'Location' && item.status == 'En attente') {
         buttons.add(
           _actionBtn(
@@ -501,7 +502,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             () => _showConfirmationDialog(
               title: "Annuler la demande",
               message:
-                  "Êtes-vous sûr de vouloir annuler votre demande de location pour ce véhicule ?",
+                  "Êtes-vous sûr de vouloir annuler votre demande de location ?",
               isDestructive: true,
               onConfirm: () => _handleBookingAction(
                 item,
@@ -549,7 +550,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
         );
       }
     } else {
-      // --- VUE PROPRIÉTAIRE ---
       if (item.type == 'Location' && item.status == 'En attente') {
         buttons.add(
           _actionBtn(
