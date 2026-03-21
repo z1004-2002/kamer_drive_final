@@ -651,6 +651,25 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       padding: const EdgeInsets.only(top: 20),
       child: Row(
         children: [
+          if (_currentStep > 0) ...[
+            Expanded(
+              child: OutlinedButton(
+                onPressed: details.onStepCancel,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.all(15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  side: const BorderSide(color: kPrimaryColor),
+                ),
+                child: const Text(
+                  "Retour",
+                  style: TextStyle(color: kPrimaryColor),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
           Expanded(
             child: ElevatedButton(
               onPressed: details.onStepContinue,
@@ -672,25 +691,6 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
                     ),
             ),
           ),
-          if (_currentStep > 0) ...[
-            const SizedBox(width: 10),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: details.onStepCancel,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.all(15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  side: const BorderSide(color: kPrimaryColor),
-                ),
-                child: const Text(
-                  "Retour",
-                  style: TextStyle(color: kPrimaryColor),
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );

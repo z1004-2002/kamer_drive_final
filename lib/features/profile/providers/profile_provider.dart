@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../../../models/user_model.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ProfileProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -20,7 +19,6 @@ class ProfileProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
 
   ProfileProvider() {
-    // Charge le profil automatiquement si un utilisateur est déjà connecté
     fetchUserProfile();
   }
 
@@ -87,7 +85,7 @@ class ProfileProvider with ChangeNotifier {
   void clearProfile() {
     _currentUser = null;
     notifyListeners();
-  } // --- UPLOAD DES DOCUMENTS D'IDENTITÉ ---
+  }
 
   // --- UPLOAD DES DOCUMENTS D'IDENTITÉ ---
   Future<void> uploadIdentityDocuments({

@@ -40,6 +40,9 @@ class VehicleModel {
 
   // Évaluations
   final List<ReviewModel> reviews;
+  // NOUVEAU : Dates de suivi
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   VehicleModel({
     required this.id,
@@ -67,6 +70,8 @@ class VehicleModel {
     required this.fuelType,
     required this.hasAC,
     required this.reviews,
+    required this.createdAt, // <-- Ajouté ici
+    required this.updatedAt, // <-- Ajouté ici
   });
 
   factory VehicleModel.fromJson(Map<String, dynamic> json) {
@@ -105,6 +110,12 @@ class VehicleModel {
               ?.map((e) => ReviewModel.fromJson(e))
               .toList() ??
           [],
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : DateTime.now(),
     );
   }
 
@@ -137,6 +148,8 @@ class VehicleModel {
       'fuelType': fuelType,
       'hasAC': hasAC,
       'reviews': reviews.map((e) => e.toJson()).toList(),
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
     };
   }
 }

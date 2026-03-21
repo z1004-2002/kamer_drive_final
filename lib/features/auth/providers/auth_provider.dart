@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:kamer_drive_final/features/profile/providers/profile_provider.dart';
 import 'package:kamer_drive_final/models/auth_model.dart';
 import 'package:kamer_drive_final/models/user_model.dart';
+import 'package:provider/provider.dart';
 
 class AuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -95,23 +97,34 @@ class AuthProvider with ChangeNotifier {
 
   // --- CONNEXION ---
   // Renvoie "true" si l'utilisateur doit faire son profilage, "false" s'il va à l'accueil
-  Future<bool> login(LoginModel data) async {
+  Future<bool> login(LoginModel data, BuildContext context) async {
     try {
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: data.emailOrPhone,
         password: data.password,
       );
 
-      // On charge les données dans la variable globale
+      // On charge les données dans la variable globale (Auth)
       DocumentSnapshot doc = await _firestore
           .collection('users')
           .doc(userCredential.user!.uid)
           .get();
+
       if (doc.exists) {
         _currentUser = UserModel.fromJson(doc.data() as Map<String, dynamic>);
         notifyListeners();
+
+        // NOUVEAU : On force le ProfileProvider à se mettre à jour avec les nouvelles données !
+        if (context.mounted) {
+          Provider.of<ProfileProvider>(
+            context,
+            listen: false,
+          ).fetchUserProfile();
+        }
       }
-      return false;
+
+      // Retourne true si le profil n'est pas fini (pour rediriger vers /profiling)
+      return _currentUser?.hasCompletedProfiling == false;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found' ||
           e.code == 'wrong-password' ||

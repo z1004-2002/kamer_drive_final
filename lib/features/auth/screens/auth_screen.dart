@@ -115,7 +115,7 @@ class _LoginFormState extends State<LoginForm> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
- Future<void> _submitLogin() async {
+  Future<void> _submitLogin() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       SnackbarUtils.showWarning(context, "Veuillez remplir tous les champs.");
       return;
@@ -130,11 +130,14 @@ class _LoginFormState extends State<LoginForm> {
       );
 
       // On récupère le résultat de la fonction login (isFirstConnection)
-      bool needsProfiling = await Provider.of<AuthProvider>(context, listen: false).login(loginData);
+      bool needsProfiling = await Provider.of<AuthProvider>(
+        context,
+        listen: false,
+      ).login(loginData, context);
 
       if (mounted) {
         SnackbarUtils.showSuccess(context, "Connexion réussie !");
-        
+
         // REDIRECTION INTELLIGENTE
         if (needsProfiling) {
           context.go('/profiling'); // Il n'a pas fini son profilage
@@ -143,7 +146,12 @@ class _LoginFormState extends State<LoginForm> {
         }
       }
     } catch (e) {
-      if (mounted) SnackbarUtils.showError(context, e.toString().replaceAll("Exception: ", ""));
+      if (mounted) {
+        SnackbarUtils.showError(
+          context,
+          e.toString().replaceAll("Exception: ", ""),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -255,7 +263,7 @@ class _SignupFormState extends State<SignupForm> {
   final _confirmPassController = TextEditingController();
   bool _isLoading = false;
 
-Future<void> _submitSignup() async {
+  Future<void> _submitSignup() async {
     // ... tes vérifications actuelles (nom, email, mot de passe) ...
 
     setState(() => _isLoading = true);
@@ -270,16 +278,23 @@ Future<void> _submitSignup() async {
         password: _passController.text.trim(),
       );
 
-      await Provider.of<AuthProvider>(context, listen: false).signup(signupData);
+      await Provider.of<AuthProvider>(
+        context,
+        listen: false,
+      ).signup(signupData);
 
       if (mounted) {
         SnackbarUtils.showSuccess(context, "Compte créé avec succès !");
-        
+
         // Pour une inscription, c'est TOUJOURS la première connexion
-        context.go('/profiling'); 
+        context.go('/profiling');
       }
     } catch (e) {
-      if (mounted) SnackbarUtils.showError(context, e.toString().replaceAll("Exception: ", ""));
+      if (mounted)
+        SnackbarUtils.showError(
+          context,
+          e.toString().replaceAll("Exception: ", ""),
+        );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

@@ -106,6 +106,8 @@ class VehicleProvider with ChangeNotifier {
         securityDeposit: securityDeposit,
         hasAC: hasAC,
         reviews: [],
+        createdAt: DateTime.now(), // Date de création fixée à "maintenant"
+        updatedAt: DateTime.now(), // Date de mise à jour fixée à "maintenant"
       );
 
       await vehicleRef.set(newVehicle.toJson());

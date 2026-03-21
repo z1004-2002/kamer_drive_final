@@ -46,6 +46,7 @@ class _SearchScreenState extends State<SearchScreen> {
       validationStatus: "Validé",
       isForRent: true,
       rentPricePerDay: 45000,
+      rentPriceWithDriver: 60000, // Ajouté
       securityDeposit: 100000,
       withDriverOption: true,
       isForSale: false,
@@ -55,6 +56,8 @@ class _SearchScreenState extends State<SearchScreen> {
       fuelType: "Essence",
       hasAC: true,
       reviews: [],
+      createdAt: DateTime.now().subtract(const Duration(days: 10)),
+      updatedAt: DateTime.now().subtract(const Duration(days: 2)),
     ),
     VehicleModel(
       id: "2",
@@ -72,6 +75,7 @@ class _SearchScreenState extends State<SearchScreen> {
       validationStatus: "Validé",
       isForRent: true,
       rentPricePerDay: 80000,
+      rentPriceWithDriver: 100000, // Ajouté
       securityDeposit: 200000,
       withDriverOption: true,
       isForSale: true,
@@ -81,6 +85,8 @@ class _SearchScreenState extends State<SearchScreen> {
       fuelType: "Essence",
       hasAC: true,
       reviews: [],
+      createdAt: DateTime.now().subtract(const Duration(days: 15)),
+      updatedAt: DateTime.now().subtract(const Duration(days: 1)),
     ),
     VehicleModel(
       id: "3",
@@ -98,6 +104,7 @@ class _SearchScreenState extends State<SearchScreen> {
       validationStatus: "Validé",
       isForRent: false,
       rentPricePerDay: null,
+      rentPriceWithDriver: null,
       securityDeposit: null,
       withDriverOption: false,
       isForSale: true,
@@ -107,6 +114,8 @@ class _SearchScreenState extends State<SearchScreen> {
       fuelType: "Essence",
       hasAC: false,
       reviews: [],
+      createdAt: DateTime.now().subtract(const Duration(days: 20)),
+      updatedAt: DateTime.now().subtract(const Duration(days: 5)),
     ),
     VehicleModel(
       id: "4",
@@ -124,6 +133,7 @@ class _SearchScreenState extends State<SearchScreen> {
       validationStatus: "Validé",
       isForRent: true,
       rentPricePerDay: 100000,
+      rentPriceWithDriver: 120000, // Ajouté
       securityDeposit: 300000,
       withDriverOption: true,
       isForSale: false,
@@ -133,6 +143,8 @@ class _SearchScreenState extends State<SearchScreen> {
       fuelType: "Diesel",
       hasAC: true,
       reviews: [],
+      createdAt: DateTime.now().subtract(const Duration(days: 5)),
+      updatedAt: DateTime.now(),
     ),
   ];
 
