@@ -25,6 +25,7 @@ class VehicleModel {
   final bool isForRent;
   final double? rentPricePerDay;
   final double? securityDeposit;
+  final double? rentPriceWithDriver;
   final bool? withDriverOption;
 
   // Configuration Vente
@@ -49,7 +50,7 @@ class VehicleModel {
     required this.city,
     required this.address,
     required this.images,
-    required this.description, // <-- Ajouté ici
+    required this.description,
     required this.registrationPlateUrl,
     required this.registrationDocumentUrl,
     required this.insuranceCertificateUrl,
@@ -58,6 +59,7 @@ class VehicleModel {
     this.rentPricePerDay,
     this.securityDeposit,
     this.withDriverOption,
+    this.rentPriceWithDriver,
     required this.isForSale,
     this.salePrice,
     required this.seats,
@@ -90,6 +92,7 @@ class VehicleModel {
       isForRent: json['isForRent'] ?? false,
       rentPricePerDay: json['rentPricePerDay']?.toDouble(),
       securityDeposit: json['securityDeposit']?.toDouble(),
+      rentPriceWithDriver: json['rentPriceWithDriver']?.toDouble(),
       withDriverOption: json['withDriverOption'],
       isForSale: json['isForSale'] ?? false,
       salePrice: json['salePrice']?.toDouble(),
@@ -116,7 +119,7 @@ class VehicleModel {
       'address': address,
       'images': images,
 
-      'description': description, // <-- Sérialisation ici
+      'description': description,
 
       'registrationPlateUrl': registrationPlateUrl,
       'registrationDocumentUrl': registrationDocumentUrl,
@@ -126,6 +129,7 @@ class VehicleModel {
       'rentPricePerDay': rentPricePerDay,
       'securityDeposit': securityDeposit,
       'withDriverOption': withDriverOption,
+      'rentPriceWithDriver': rentPriceWithDriver,
       'isForSale': isForSale,
       'salePrice': salePrice,
       'seats': seats,

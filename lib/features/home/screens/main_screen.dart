@@ -77,9 +77,16 @@ class _MainScreenState extends State<MainScreen> {
           backgroundColor: kPrimaryColor,
           elevation: 5,
           shape: const CircleBorder(), // Parfaitement rond
-          onPressed: () {
-            // Navigation vers l'ajout de véhicule (Vente/Location)
-            context.push('/my_listings');
+          onPressed: () async {
+            // 1. On navigue vers la page et on ATTEND son retour
+            final result = await context.push('/my_listings');
+
+            // 2. Si le retour nous dit d'aller au profil...
+            if (result == 'goToProfile') {
+              setState(() {
+                _navIndex = 4; // On bascule directement sur l'onglet Profil !
+              });
+            }
           },
           child: const Icon(Icons.add, size: 35, color: Colors.white),
         ),

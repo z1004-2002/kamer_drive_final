@@ -102,12 +102,10 @@ void showVehicleDetailsModal(
                               ),
                               const SizedBox(height: 15),
                               _buildSpecs(vehicle, themeColor, lightThemeColor),
-                              if (vehicle.isForRent &&
-                                  vehicle.securityDeposit != null &&
-                                  vehicle.securityDeposit! > 0) ...[
+                              if (vehicle.isForRent) ...[
                                 const SizedBox(height: 25),
                                 const Text(
-                                  "Conditions de location",
+                                  "Tarifs & Conditions de location",
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -123,37 +121,100 @@ void showVehicleDetailsModal(
                                       color: Colors.orange.shade200,
                                     ),
                                   ),
-                                  child: Row(
+                                  child: Column(
                                     children: [
-                                      Icon(
-                                        Icons.shield_outlined,
-                                        color: Colors.orange.shade700,
-                                        size: 28,
+                                      // Prix Standard
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text(
+                                            "Sans chauffeur :",
+                                            style: TextStyle(
+                                              color: Colors.black87,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          Text(
+                                            "${vehicle.rentPricePerDay?.toInt()} FCFA/j",
+                                            style: TextStyle(
+                                              color: Colors.orange.shade800,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(width: 15),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              "Caution (Remboursable)",
-                                              style: TextStyle(
-                                                color: Colors.orange.shade900,
-                                                fontSize: 13,
-                                              ),
+                                      const Divider(height: 20),
+
+                                      // Prix avec Chauffeur (Si dispo)
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text(
+                                            "Avec chauffeur :",
+                                            style: TextStyle(
+                                              color: Colors.black87,
+                                              fontWeight: FontWeight.w500,
                                             ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              "${vehicle.securityDeposit!.toInt()} FCFA",
-                                              style: TextStyle(
+                                          ),
+                                          vehicle.withDriverOption == true &&
+                                                  vehicle.rentPriceWithDriver !=
+                                                      null
+                                              ? Text(
+                                                  "${vehicle.rentPriceWithDriver?.toInt()} FCFA/j",
+                                                  style: TextStyle(
+                                                    color:
+                                                        Colors.orange.shade800,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 16,
+                                                  ),
+                                                )
+                                              : const Text(
+                                                  "Non disponible",
+                                                  style: TextStyle(
+                                                    color: Colors.grey,
+                                                    fontStyle: FontStyle.italic,
+                                                  ),
+                                                ),
+                                        ],
+                                      ),
+                                      const Divider(height: 20),
+
+                                      // Caution
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.shield_outlined,
                                                 color: Colors.orange.shade700,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
+                                                size: 18,
                                               ),
+                                              const SizedBox(width: 5),
+                                              const Text(
+                                                "Caution remboursable :",
+                                                style: TextStyle(
+                                                  color: Colors.black87,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Text(
+                                            (vehicle.securityDeposit ?? 0) > 0
+                                                ? "${vehicle.securityDeposit!.toInt()} FCFA"
+                                                : "Aucune",
+                                            style: TextStyle(
+                                              color: Colors.orange.shade800,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -456,16 +517,38 @@ Widget _buildBottomActionArea(
                   )
                 // Cas 2 : Le véhicule a des prix définis
                 else ...[
-                  if (isOwnerView || (isRentContext && vehicle.isForRent))
+                  if (!isOwnerView && (isRentContext && vehicle.isForRent))
                     Text(
-                      "${vehicle.rentPricePerDay?.toInt()} FCFA/j (Loc.)",
+                      vehicle.withDriverOption == true
+                          ? "Dès ${vehicle.rentPricePerDay?.toInt()} FCFA/j"
+                          : "${vehicle.rentPricePerDay?.toInt()} FCFA/j (Loc.)",
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: kPrimaryColor,
                       ),
                     ),
-                  if (isOwnerView || (!isRentContext && vehicle.isForSale))
+                  if (!isOwnerView && (!isRentContext && vehicle.isForSale))
+                    Text(
+                      "${vehicle.salePrice?.toInt()} FCFA (Vente)",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade700,
+                      ),
+                    ),
+                  if (isOwnerView && vehicle.isForRent)
+                    Text(
+                      vehicle.withDriverOption == true
+                          ? "Dès ${vehicle.rentPricePerDay?.toInt()} FCFA/j"
+                          : "${vehicle.rentPricePerDay?.toInt()} FCFA/j (Loc.)",
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: kPrimaryColor,
+                      ),
+                    ),
+                  if (isOwnerView && vehicle.isForSale)
                     Text(
                       "${vehicle.salePrice?.toInt()} FCFA (Vente)",
                       style: TextStyle(

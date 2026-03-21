@@ -12,7 +12,6 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
 
-    // On écoute le ProfileProvider au lieu de l'AuthProvider
     final currentUser = context.watch<ProfileProvider>().currentUser;
 
     bool isProfileIncomplete =

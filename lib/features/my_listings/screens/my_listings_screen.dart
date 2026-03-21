@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kamer_drive_final/core/utils/snackbar_utils.dart';
+import 'package:kamer_drive_final/features/profile/providers/profile_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
 import 'package:kamer_drive_final/shared/widgets/vehicle_details_modal.dart';
@@ -22,6 +24,111 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
     if (mounted) {
       setState(() {});
     }
+  } // --- NOUVEAU : VÉRIFICATION DU PROFIL AVANT L'AJOUT ---
+
+  void _checkProfileAndNavigate() {
+    // On récupère le ProfileProvider sans écoute continue
+    final profileProvider = Provider.of<ProfileProvider>(
+      context,
+      listen: false,
+    );
+    final user = profileProvider.currentUser;
+
+    // 1. L'utilisateur est-il chargé ?
+    if (user == null) {
+      SnackbarUtils.showError(
+        context,
+        "Erreur de chargement du profil. Veuillez patienter.",
+      );
+      return;
+    }
+
+    // 2. Vérification des informations de base
+    if (user.phone.isEmpty || user.address.isEmpty) {
+      _showIncompleteProfileDialog(
+        "Profil incomplet",
+        "Veuillez renseigner votre numéro de téléphone et votre adresse avant d'ajouter un véhicule.",
+      );
+      return;
+    }
+
+    // 3. Vérification de la propriété d'un véhicule
+    if (!user.ownsVehicle) {
+      _showIncompleteProfileDialog(
+        "Statut Propriétaire",
+        "Vous devez indiquer que vous possédez un véhicule dans votre profil avant de pouvoir publier une annonce.",
+      );
+      return;
+    }
+
+    // 4. Vérification des documents d'identité
+    // On vérifie qu'il a au moins un document valide (Passport OU CNI Front)
+    bool hasIdentityDoc =
+        user.idDocuments.containsKey('passport') ||
+        user.idDocuments.containsKey('id_front');
+
+    if (!hasIdentityDoc) {
+      _showIncompleteProfileDialog(
+        "Identité non vérifiée",
+        "Pour des raisons de sécurité, vous devez uploader une pièce d'identité (CNI ou Passeport) dans votre profil.",
+      );
+      return;
+    }
+
+    // Si toutes les vérifications passent, on va sur la page d'ajout !
+    context.push('/add_vehicle');
+  }
+
+  // --- POPUP DE REDIRECTION ---
+  void _showIncompleteProfileDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            const SizedBox(width: 10),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: TextStyle(color: Colors.grey.shade700, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              "Plus tard",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.pop('goToProfile');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kPrimaryColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              "Compléter mon profil",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -164,7 +271,8 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/add_vehicle'),
+        onPressed:
+            _checkProfileAndNavigate, // <--- On appelle notre nouvelle fonction ici !
         backgroundColor: kPrimaryColor,
         elevation: 4,
         icon: const Icon(Icons.add, color: Colors.white),

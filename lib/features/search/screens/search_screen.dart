@@ -395,18 +395,24 @@ class _SearchScreenState extends State<SearchScreen> {
                           Wrap(
                             spacing: 10,
                             runSpacing: 10,
-                            children: ["Toutes", "Automatique", "Manuelle"]
-                                .map(
-                                  (box) => _buildFilterChip(
-                                    box,
-                                    box,
-                                    _selectedGearbox,
-                                    (v) => setModalState(
-                                      () => _selectedGearbox = v,
-                                    ),
-                                  ),
-                                )
-                                .toList(),
+                            children:
+                                [
+                                      "Toutes",
+                                      "Automatique",
+                                      "Manuelle",
+                                      "Semi-automatique",
+                                    ]
+                                    .map(
+                                      (box) => _buildFilterChip(
+                                        box,
+                                        box,
+                                        _selectedGearbox,
+                                        (v) => setModalState(
+                                          () => _selectedGearbox = v,
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
                           ),
                           const SizedBox(height: 25),
 

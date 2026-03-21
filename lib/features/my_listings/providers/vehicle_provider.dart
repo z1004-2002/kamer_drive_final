@@ -43,6 +43,8 @@ class VehicleProvider with ChangeNotifier {
     required bool isForRent,
     required bool isForSale,
     double? rentPrice,
+    required bool withDriverOption,
+    double? rentPriceWithDriver,
     double? salePrice,
     double? securityDeposit,
     required Map<String, File> vehicleImages,
@@ -94,6 +96,8 @@ class VehicleProvider with ChangeNotifier {
         validationStatus: "En attente",
         isForRent: isForRent,
         rentPricePerDay: rentPrice,
+        withDriverOption: withDriverOption,
+        rentPriceWithDriver: rentPriceWithDriver,
         isForSale: isForSale,
         salePrice: salePrice,
         seats: seats,
@@ -115,7 +119,7 @@ class VehicleProvider with ChangeNotifier {
     String uid = _auth.currentUser!.uid;
     return _firestore
         .collection('vehicles')
-        .where('ownerId', isEqualTo: uid) // Filtre par propriétaire
+        .where('ownerId', isEqualTo: uid)
         .snapshots()
         .map(
           (snapshot) => snapshot.docs

@@ -110,8 +110,6 @@ class AuthProvider with ChangeNotifier {
       if (doc.exists) {
         _currentUser = UserModel.fromJson(doc.data() as Map<String, dynamic>);
         notifyListeners();
-
-        return _currentUser!.isFirstConnection;
       }
       return false;
     } on FirebaseAuthException catch (e) {

@@ -29,6 +29,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   final _descriptionController = TextEditingController();
   final _seatsController = TextEditingController();
   final _securityDepositController = TextEditingController();
+  final _rentPriceWithDriverController = TextEditingController();
 
   // --- ÉTATS ---
   bool _isForRent = false;
@@ -36,6 +37,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
   bool _hasAC = true;
   String _selectedGearbox = "Manuelle";
   String _selectedFuel = "Essence";
+  bool _withDriverOption = false;
 
   // --- IMAGES ---
   final ImagePicker _picker = ImagePicker();
@@ -55,6 +57,7 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
       _descriptionController,
       _seatsController,
       _securityDepositController,
+      _rentPriceWithDriverController,
     ]) {
       controller.dispose();
     }
@@ -127,6 +130,10 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
         fuelType: _selectedFuel,
         hasAC: _hasAC,
         isForRent: _isForRent,
+        withDriverOption: _withDriverOption,
+        rentPriceWithDriver: double.tryParse(
+          _rentPriceWithDriverController.text,
+        ),
         isForSale: _isForSale,
         rentPrice: double.tryParse(_rentPriceController.text),
         salePrice: double.tryParse(_salePriceController.text),
@@ -253,8 +260,33 @@ class _AddVehicleScreenState extends State<AddVehicleScreen> {
               isHighlight: true,
             ),
             const SizedBox(height: 15),
+            // NOUVEAU : Le Switch pour l'option Chauffeur
+            SwitchListTile(
+              title: const Text(
+                "Proposer l'option Chauffeur",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text(
+                "Le locataire pourra choisir s'il veut un chauffeur.",
+              ),
+              value: _withDriverOption,
+              activeColor: kPrimaryColor,
+              onChanged: (v) => setState(() => _withDriverOption = v),
+            ),
 
-            // --- NOUVEAU CHAMP : CAUTION ---
+            // NOUVEAU : Le champ apparaît seulement si l'option est activée
+            if (_withDriverOption) ...[
+              const SizedBox(height: 10),
+              _buildModernTextField(
+                "Prix AVEC chauffeur/Jour (FCFA)",
+                Icons.person_pin,
+                _rentPriceWithDriverController,
+                isNumber: true,
+                isHighlight: true,
+              ),
+            ],
+
+            const SizedBox(height: 15),
             _buildModernTextField(
               "Caution exigée (FCFA)",
               Icons.shield_outlined,
