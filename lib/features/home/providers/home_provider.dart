@@ -31,6 +31,7 @@ class HomeProvider with ChangeNotifier {
           .collection('vehicles')
           .where('validationStatus', isEqualTo: 'Validé')
           .where('isForRent', isEqualTo: true)
+          .where('isAvailable', isEqualTo: true)
           // .orderBy('createdAt', descending: true)
           .limit(
             15,
@@ -49,6 +50,7 @@ class HomeProvider with ChangeNotifier {
           .collection('vehicles')
           .where('validationStatus', isEqualTo: 'Validé')
           .where('isForSale', isEqualTo: true)
+          .where('isAvailable', isEqualTo: true)
           // .orderBy('createdAt', descending: true)
           .limit(15)
           .get();

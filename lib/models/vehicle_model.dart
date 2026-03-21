@@ -43,6 +43,7 @@ class VehicleModel {
   // NOUVEAU : Dates de suivi
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool isAvailable;
 
   VehicleModel({
     required this.id,
@@ -70,8 +71,9 @@ class VehicleModel {
     required this.fuelType,
     required this.hasAC,
     required this.reviews,
-    required this.createdAt, // <-- Ajouté ici
-    required this.updatedAt, // <-- Ajouté ici
+    required this.createdAt,
+    required this.updatedAt,
+    this.isAvailable = false,
   });
 
   factory VehicleModel.fromJson(Map<String, dynamic> json) {
@@ -105,6 +107,7 @@ class VehicleModel {
       gearbox: json['gearbox'] ?? 'Manuelle',
       fuelType: json['fuelType'] ?? 'Essence',
       hasAC: json['hasAC'] ?? true,
+      isAvailable: json['isAvailable'] ?? true,
       reviews:
           (json['reviews'] as List<dynamic>?)
               ?.map((e) => ReviewModel.fromJson(e))
@@ -145,6 +148,7 @@ class VehicleModel {
       'salePrice': salePrice,
       'seats': seats,
       'gearbox': gearbox,
+      'isAvailable': isAvailable,
       'fuelType': fuelType,
       'hasAC': hasAC,
       'reviews': reviews.map((e) => e.toJson()).toList(),

@@ -107,7 +107,9 @@ class VehicleProvider with ChangeNotifier {
         hasAC: hasAC,
         reviews: [],
         createdAt: DateTime.now(), // Date de création fixée à "maintenant"
-        updatedAt: DateTime.now(), // Date de mise à jour fixée à "maintenant"
+        updatedAt:
+            DateTime.now(), // Date de mise à jour fixée à "maintenant".where('isAvailable', isEqualTo: true)
+        isAvailable: false,
       );
 
       await vehicleRef.set(newVehicle.toJson());

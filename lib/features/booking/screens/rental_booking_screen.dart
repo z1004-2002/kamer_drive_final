@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kamer_drive_final/features/home/providers/home_provider.dart';
+import 'package:kamer_drive_final/features/search/provider/search_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
@@ -67,6 +69,8 @@ class _RentalBookingScreenState extends State<RentalBookingScreen> {
     return basePrice + driverTotal;
   }
 
+  // In lib/screens/booking/screens/rental_booking_screen.dart
+
   Future<void> _submitBooking() async {
     if (_startDate == null || _endDate == null) {
       SnackbarUtils.showWarning(context, "Veuillez sélectionner vos dates.");
@@ -111,11 +115,19 @@ class _RentalBookingScreenState extends State<RentalBookingScreen> {
           context,
           "Demande envoyée ! Le propriétaire vous contactera.",
         );
+
+        // --- NOUVEAU: Rafraîchir les listes avant de quitter ---
+        // Si l'utilisateur vient de Home:
+        context.read<HomeProvider>().fetchHomeData();
+        // Si l'utilisateur vient de Search:
+        context.read<SearchProvider>().fetchAllVehicles();
+
         context.pop();
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         SnackbarUtils.showError(context, "Erreur lors de la réservation.");
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

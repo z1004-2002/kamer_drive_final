@@ -27,6 +27,7 @@ class SearchProvider with ChangeNotifier {
       final querySnapshot = await _firestore
           .collection('vehicles')
           .where('validationStatus', isEqualTo: 'Validé')
+          .where('isAvailable', isEqualTo: true)
           // .orderBy('createdAt', descending: true)
           .get();
 
@@ -66,6 +67,7 @@ class SearchProvider with ChangeNotifier {
           }
 
           // 2. Filtres Basiques
+          if (!v.isAvailable) return false;
           if (transactionType == 'rent' && !v.isForRent) return false;
           if (transactionType == 'sale' && !v.isForSale) return false;
           if (brand != 'Toutes' && v.brand != brand) return false;

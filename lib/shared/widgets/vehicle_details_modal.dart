@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // NOUVEAU: Requis pour aller chercher l'utilisateur
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
@@ -10,7 +11,6 @@ void showVehicleDetailsModal(
   bool isRentContext = true,
   bool isOwnerView = false,
 }) {
-  // On déclare l'index ici pour qu'il soit accessible par le StatefulBuilder
   int currentImageIndex = 0;
 
   showModalBottomSheet(
@@ -31,7 +31,6 @@ void showVehicleDetailsModal(
               ? lPrimaryColor
               : Colors.orange.shade50;
 
-          // On gère les couleurs spécifiques si la voiture est privée (grisée)
           bool isPrivate = !vehicle.isForRent && !vehicle.isForSale;
           if (isPrivate) {
             themeColor = Colors.grey.shade700;
@@ -73,7 +72,6 @@ void showVehicleDetailsModal(
                         _buildCarousel(
                           vehicle,
                           currentImageIndex,
-                          // NOUVEAU : On passe un callback qui met à jour la vraie variable
                           (index) {
                             setModalState(() {
                               currentImageIndex = index as int;
@@ -92,6 +90,7 @@ void showVehicleDetailsModal(
                               _buildHeader(vehicle, rating),
                               const SizedBox(height: 8),
                               _buildLocationAndYear(vehicle),
+
                               const SizedBox(height: 25),
                               const Text(
                                 "Caractéristiques",
@@ -102,6 +101,7 @@ void showVehicleDetailsModal(
                               ),
                               const SizedBox(height: 15),
                               _buildSpecs(vehicle, themeColor, lightThemeColor),
+
                               if (vehicle.isForRent) ...[
                                 const SizedBox(height: 25),
                                 const Text(
@@ -147,7 +147,7 @@ void showVehicleDetailsModal(
                                       ),
                                       const Divider(height: 20),
 
-                                      // Prix avec Chauffeur (Si dispo)
+                                      // Prix avec Chauffeur
                                       Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
@@ -220,6 +220,7 @@ void showVehicleDetailsModal(
                                   ),
                                 ),
                               ],
+
                               const SizedBox(height: 25),
                               const Text(
                                 "Description",
@@ -237,6 +238,21 @@ void showVehicleDetailsModal(
                                   fontSize: 14,
                                 ),
                               ),
+
+                              // --- NOUVEAU : ENCART PROPRIÉTAIRE ---
+                              if (!isMyVehicle) ...[
+                                const SizedBox(height: 25),
+                                const Text(
+                                  "Propriétaire",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                _buildOwnerInfo(vehicle.ownerId, themeColor),
+                              ],
+
                               const SizedBox(height: 40),
                             ],
                           ),
@@ -265,12 +281,123 @@ void showVehicleDetailsModal(
   );
 }
 
+// --- SOUS-WIDGET : PROPRIÉTAIRE (FETCH FIRESTORE) ---
+Widget _buildOwnerInfo(String ownerId, Color themeColor) {
+  return FutureBuilder<DocumentSnapshot>(
+    future: FirebaseFirestore.instance.collection('users').doc(ownerId).get(),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return Center(child: CircularProgressIndicator(color: themeColor));
+      }
+      if (!snapshot.hasData || !snapshot.data!.exists) {
+        return Container(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: const Text(
+            "Informations du propriétaire indisponibles.",
+            style: TextStyle(color: Colors.grey),
+          ),
+        );
+      }
+
+      final data = snapshot.data!.data() as Map<String, dynamic>;
+      final name = "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}"
+          .trim();
+      final phone = data['phone'] ?? 'Non renseigné';
+      final email = data['email'] ?? 'Non renseigné';
+      final avatarUrl = data['avatarUrl'] ?? '';
+
+      return Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: themeColor.withOpacity(0.1),
+              backgroundImage: avatarUrl.isNotEmpty
+                  ? NetworkImage(avatarUrl)
+                  : null,
+              child: avatarUrl.isEmpty
+                  ? Icon(Icons.person, color: themeColor, size: 30)
+                  : null,
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name.isNotEmpty ? name : 'Utilisateur',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.phone, size: 14, color: Colors.grey.shade600),
+                      const SizedBox(width: 5),
+                      Text(
+                        phone,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.email, size: 14, color: Colors.grey.shade600),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Text(
+                          email,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 13,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
 // --- SOUS-WIDGETS POUR LA CLARTÉ ---
 
 Widget _buildCarousel(
   VehicleModel vehicle,
   int currentIndex,
-  ValueChanged<int> onPageChanged, // NOUVEAU : On utilise un Callback ici
+  ValueChanged<int> onPageChanged,
   Color theme,
   Color lightTheme,
 ) {
@@ -281,8 +408,7 @@ Widget _buildCarousel(
       children: [
         PageView.builder(
           physics: const BouncingScrollPhysics(),
-          onPageChanged:
-              onPageChanged, // NOUVEAU : On appelle le callback directement
+          onPageChanged: onPageChanged,
           itemCount: vehicle.images.isNotEmpty ? vehicle.images.length : 1,
           itemBuilder: (context, index) {
             if (vehicle.images.isEmpty) {
@@ -347,7 +473,6 @@ Widget _buildCarousel(
                     duration: const Duration(milliseconds: 300),
                     margin: const EdgeInsets.symmetric(horizontal: 3),
                     height: 6,
-                    // L'animation fonctionne car currentIndex est maintenant parfaitement à jour !
                     width: currentIndex == index ? 18 : 6,
                     decoration: BoxDecoration(
                       color: currentIndex == index
@@ -501,101 +626,137 @@ Widget _buildBottomActionArea(
         children: [
           // --- ZONE DES PRIX ---
           Expanded(
+            flex: 4,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Cas 1 : Le véhicule est privé (ni location, ni vente)
                 if (isPrivate)
                   Text(
                     "Non en service (privé)",
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: Colors.grey.shade600,
                     ),
                   )
-                // Cas 2 : Le véhicule a des prix définis
                 else ...[
-                  if (!isOwnerView && (isRentContext && vehicle.isForRent))
+                  // On affiche le prix de location SI c'est à louer
+                  if (vehicle.isForRent)
                     Text(
                       vehicle.withDriverOption == true
                           ? "Dès ${vehicle.rentPricePerDay?.toInt()} FCFA/j"
-                          : "${vehicle.rentPricePerDay?.toInt()} FCFA/j (Loc.)",
+                          : "${vehicle.rentPricePerDay?.toInt()} FCFA/j",
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: kPrimaryColor,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  if (!isOwnerView && (!isRentContext && vehicle.isForSale))
+                  // On affiche le prix de vente SI c'est à vendre
+                  if (vehicle.isForSale)
                     Text(
                       "${vehicle.salePrice?.toInt()} FCFA (Vente)",
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Colors.orange.shade700,
                       ),
-                    ),
-                  if (isOwnerView && vehicle.isForRent)
-                    Text(
-                      vehicle.withDriverOption == true
-                          ? "Dès ${vehicle.rentPricePerDay?.toInt()} FCFA/j"
-                          : "${vehicle.rentPricePerDay?.toInt()} FCFA/j (Loc.)",
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: kPrimaryColor,
-                      ),
-                    ),
-                  if (isOwnerView && vehicle.isForSale)
-                    Text(
-                      "${vehicle.salePrice?.toInt()} FCFA (Vente)",
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange.shade700,
-                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                 ],
               ],
             ),
           ),
 
-          // --- BOUTON D'ACTION ---
-          ElevatedButton(
-            onPressed: () {
-              // Navigator.pop(context);
-              if (isMyVehicle) {
-                // TODO: Naviguer vers l'écran d'édition
-              } else if (!isPrivate) {
-                if (isRentContext) {
-                  // LOCATION : Ouvre l'écran de Réservation
-                  context.push('/rental_booking', extra: vehicle);
-                } else {
-                  // VENTE : Ouvre l'écran de Vente
-                  context.push('/sale_booking', extra: vehicle);
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isMyVehicle ? Colors.black87 : themeColor,
-              padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-              elevation: 0,
-            ),
-            child: Text(
-              isMyVehicle
-                  ? "Modifier"
-                  : (isRentContext ? "Réserver" : "Acheter"),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              ),
-            ),
+          const SizedBox(width: 10),
+
+          // --- BOUTON(S) D'ACTION ---
+          Expanded(
+            flex: 6,
+            child: isMyVehicle
+                // SI C'EST MON VÉHICULE -> Bouton Modifier
+                ? ElevatedButton(
+                    onPressed: () {
+                      // TODO: Naviguer vers l'écran d'édition
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black87,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      "Modifier",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  )
+                : isPrivate
+                // SI C'EST PRIVÉ -> Rien
+                ? const SizedBox.shrink()
+                // SI C'EST POUR LES CLIENTS -> 1 ou 2 boutons
+                : Row(
+                    children: [
+                      if (vehicle.isForRent)
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () =>
+                                context.push('/rental_booking', extra: vehicle),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kPrimaryColor,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: const Text(
+                              "Réserver",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (vehicle.isForRent && vehicle.isForSale)
+                        const SizedBox(
+                          width: 8,
+                        ), // Espace entre les deux boutons
+                      if (vehicle.isForSale)
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () =>
+                                context.push('/sale_booking', extra: vehicle),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange.shade600,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: const Text(
+                              "Acheter",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
           ),
         ],
       ),

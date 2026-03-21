@@ -1,33 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kamer_drive_final/models/unified_history_item_model.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
 import 'package:kamer_drive_final/core/utils/snackbar_utils.dart';
-// N'oublie pas d'importer tes modèles (RentalBookingModel, SaleBookingModel, UnifiedHistoryItem, etc.)
-
-// --- (Optionnel ici si déjà défini ailleurs) ---
-class UnifiedHistoryItem {
-  final String id;
-  final String type; // "Location" ou "Vente"
-  final String status;
-  final String vehicleName;
-  final String imageUrl;
-  final String dateInfo;
-  final double totalPrice;
-  final bool isMyListing; // Vrai si je suis le proprio, Faux si je suis client
-  final dynamic originalModel;
-
-  UnifiedHistoryItem({
-    required this.id,
-    required this.type,
-    required this.status,
-    required this.vehicleName,
-    required this.imageUrl,
-    required this.dateInfo,
-    required this.totalPrice,
-    required this.isMyListing,
-    required this.originalModel,
-  });
-}
+import '../../booking/providers/booking_provider.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -37,8 +15,7 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  // --- ÉTATS ---
-  bool _isOwnerMode = false; // False = Vue Client, True = Vue Propriétaire
+  bool _isOwnerMode = false;
   String _selectedFilter = 'Toutes';
   final List<String> _filters = [
     'Toutes',
@@ -47,109 +24,115 @@ class _HistoryScreenState extends State<HistoryScreen> {
     'Annulées',
   ];
 
-  // --- DONNÉES STATIQUES DE TEST BÂTIES SUR TON MODÈLE ---
-  final List<UnifiedHistoryItem> _allHistory = [
-    // 1. CLIENT : Location en cours
-    UnifiedHistoryItem(
-      id: "H1",
-      type: "Location",
-      status: "En cours",
-      vehicleName: "Toyota RAV4",
-      imageUrl: "assets/images/car1.png",
-      dateInfo: "12 Mars - 15 Mars",
-      totalPrice: 135000,
-      isMyListing: false,
-      originalModel: null,
-    ),
-    // 2. CLIENT : Vente en négociation
-    UnifiedHistoryItem(
-      id: "H2",
-      type: "Vente",
-      status: "Négociation",
-      vehicleName: "Mercedes Classe C",
-      imageUrl: "assets/images/car2.png",
-      dateInfo: "Initié le 10 Fév",
-      totalPrice: 18000000,
-      isMyListing: false,
-      originalModel: null,
-    ),
-    // 3. PROPRIÉTAIRE : Demande de location en attente
-    UnifiedHistoryItem(
-      id: "H3",
-      type: "Location",
-      status: "En attente",
-      vehicleName: "Suzuki Alto",
-      imageUrl: "assets/images/car1.png",
-      dateInfo: "20 Avril - 22 Avril",
-      totalPrice: 60000,
-      isMyListing: true,
-      originalModel: null,
-    ),
-    // 4. PROPRIÉTAIRE : Vente, Fonds validés
-    UnifiedHistoryItem(
-      id: "H4",
-      type: "Vente",
-      status: "Fonds Validés",
-      vehicleName: "Toyota Prado",
-      imageUrl: "assets/images/car2.png",
-      dateInfo: "Vendu le 05 Jan",
-      totalPrice: 25000000,
-      isMyListing: true,
-      originalModel: null,
-    ),
-    // 5. CLIENT : Terminé
-    UnifiedHistoryItem(
-      id: "H5",
-      type: "Location",
-      status: "Terminé",
-      vehicleName: "Kia Sportage",
-      imageUrl: "assets/images/car1.png",
-      dateInfo: "01 Jan - 05 Jan",
-      totalPrice: 150000,
-      isMyListing: false,
-      originalModel: null,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BookingProvider>().fetchUserHistory();
+    });
+  }
 
-  // --- LOGIQUE DE FILTRAGE MAPPÉE ---
-  // Mappe les statuts réels complexes vers nos 3 filtres simples.
   bool _matchesFilter(String rawStatus) {
     if (_selectedFilter == 'Toutes') return true;
-
-    if (_selectedFilter == 'Terminées') {
-      return rawStatus == 'Terminé';
-    }
-    if (_selectedFilter == 'Annulées') {
-      return rawStatus == 'Annulé';
-    }
+    if (_selectedFilter == 'Terminées') return rawStatus == 'Terminé';
+    if (_selectedFilter == 'Annulées')
+      return rawStatus == 'Annulé' || rawStatus == 'Rejeté';
     if (_selectedFilter == 'En cours/Attente') {
       return [
         'En attente',
         'Confirmé',
         'En cours',
         'Négociation',
-        'Réservé',
         'Fonds Validés',
       ].contains(rawStatus);
     }
     return false;
   }
 
-  // --- ACTIONS DYNAMIQUES (SNACKBARS) ---
-  void _executeAction(String message) {
-    SnackbarUtils.showSuccess(context, message);
+  Future<void> _handleBookingAction(
+    UnifiedHistoryItem item,
+    String newStatus,
+    bool makeAvailable,
+    String successMessage,
+  ) async {
+    try {
+      String collection = item.type == "Location"
+          ? 'rental_bookings'
+          : 'sale_bookings';
+
+      await context.read<BookingProvider>().updateBookingStatus(
+        collectionName: collection,
+        bookingId: item.bookingId,
+        newStatus: newStatus,
+        vehicleId: item.vehicleId,
+        makeVehicleAvailable: makeAvailable,
+      );
+
+      if (mounted) SnackbarUtils.showSuccess(context, successMessage);
+    } catch (e) {
+      if (mounted)
+        SnackbarUtils.showError(context, "Erreur lors de l'opération.");
+    }
+  }
+
+  // --- NOUVEAU : BOÎTE DE DIALOGUE DE CONFIRMATION ---
+  void _showConfirmationDialog({
+    required String title,
+    required String message,
+    required VoidCallback onConfirm,
+    bool isDestructive = false,
+  }) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Text(
+          message,
+          style: TextStyle(color: Colors.grey.shade700, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Annuler", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx); // Ferme la boîte de dialogue
+              onConfirm(); // Exécute l'action de mise à jour Firestore
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isDestructive ? Colors.red : kPrimaryColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 0,
+            ),
+            child: const Text(
+              "Confirmer",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
+    final bookingProvider = context.watch<BookingProvider>();
 
-    // 1. Filtrer par Rôle (Propriétaire vs Client) ET par Statut (_selectedFilter)
-    List<UnifiedHistoryItem> displayedList = _allHistory.where((item) {
-      bool roleMatch = item.isMyListing == _isOwnerMode;
-      bool statusMatch = _matchesFilter(item.status);
-      return roleMatch && statusMatch;
-    }).toList();
+    List<UnifiedHistoryItem> sourceList = _isOwnerMode
+        ? bookingProvider.ownerHistory
+        : bookingProvider.clientHistory;
+
+    List<UnifiedHistoryItem> displayedList = sourceList
+        .where((item) => _matchesFilter(item.status))
+        .toList();
 
     return Scaffold(
       backgroundColor: kBackgroundColor,
@@ -170,7 +153,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
           Column(
             children: [
-              // --- 1. HEADER DÉGRADÉ ---
+              // --- HEADER ---
               Container(
                 padding: EdgeInsets.only(
                   top: MediaQuery.of(context).padding.top,
@@ -182,9 +165,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     end: Alignment.bottomRight,
                     colors: [kPrimaryColor, dPrimaryColor],
                   ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30),
-                    bottomRight: Radius.circular(30),
+                  borderRadius: BorderRadius.vertical(
+                    bottom: Radius.circular(30),
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -196,12 +178,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
                 child: Column(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 30),
                       child: Row(
                         children: [
-                          const SizedBox(width: 20, height: 50),
-                          const Text(
+                          SizedBox(height: 50),
+                          Text(
                             "Mon Historique",
                             style: TextStyle(
                               color: Colors.white,
@@ -214,7 +196,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
                     const SizedBox(height: 15),
 
-                    // --- 2. SÉLECTEUR DE RÔLE (CLIENT / PROPRIO) ---
+                    // SÉLECTEUR RÔLE
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 20),
                       padding: const EdgeInsets.all(4),
@@ -237,7 +219,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 ),
                                 child: Center(
                                   child: Text(
-                                    "Mes Réservations",
+                                    "Mes Achats/Locations",
                                     style: TextStyle(
                                       color: !_isOwnerMode
                                           ? kPrimaryColor
@@ -282,7 +264,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               ),
 
-              // --- 3. BARRE DE FILTRES DES STATUTS ---
+              // --- BARRE DE FILTRES ---
               Container(
                 height: 45,
                 margin: const EdgeInsets.only(top: 15),
@@ -329,21 +311,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               ),
 
-              // --- 4. LISTE DES RÉSULTATS ---
+              // --- LISTE DES RÉSULTATS ---
               Expanded(
-                child: displayedList.isEmpty
+                child: bookingProvider.isLoadingHistory
+                    ? const Center(
+                        child: CircularProgressIndicator(color: kPrimaryColor),
+                      )
+                    : displayedList.isEmpty
                     ? _buildEmptyMessage()
-                    : ListView.builder(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.only(
-                          top: 15,
-                          bottom: 40,
-                          left: 20,
-                          right: 20,
+                    : RefreshIndicator(
+                        onRefresh: () =>
+                            context.read<BookingProvider>().fetchUserHistory(),
+                        color: kPrimaryColor,
+                        child: ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(
+                            parent: BouncingScrollPhysics(),
+                          ),
+                          padding: const EdgeInsets.only(
+                            top: 15,
+                            bottom: 40,
+                            left: 20,
+                            right: 20,
+                          ),
+                          itemCount: displayedList.length,
+                          itemBuilder: (context, index) =>
+                              _buildHistoryCard(displayedList[index]),
                         ),
-                        itemCount: displayedList.length,
-                        itemBuilder: (context, index) =>
-                            _buildHistoryCard(displayedList[index]),
                       ),
               ),
             ],
@@ -353,16 +346,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  // --- CARTE D'HISTORIQUE UNIFIÉE ---
   Widget _buildHistoryCard(UnifiedHistoryItem item) {
-    // Thème (Location ou Vente)
     Color typeColor = item.type == 'Location'
         ? kPrimaryColor
         : Colors.orange.shade700;
+    Color statusColor = Colors.orange.shade700;
 
-    // Couleur du Statut
-    Color statusColor;
-    Color statusBgColor;
     if ([
       'En cours',
       'Négociation',
@@ -370,17 +359,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
       'Confirmé',
     ].contains(item.status)) {
       statusColor = Colors.blue.shade700;
-      statusBgColor = Colors.blue.shade50;
     } else if (item.status == 'Terminé') {
       statusColor = Colors.green.shade700;
-      statusBgColor = Colors.green.shade50;
-    } else if (item.status == 'Annulé') {
+    } else if (['Annulé', 'Rejeté'].contains(item.status)) {
       statusColor = Colors.red.shade700;
-      statusBgColor = Colors.red.shade50;
-    } else {
-      // 'En attente', 'Réservé'
-      statusColor = Colors.orange.shade700;
-      statusBgColor = Colors.orange.shade50;
     }
 
     return Container(
@@ -398,12 +380,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
       child: Column(
         children: [
-          // --- HAUT : INFOS VÉHICULE ---
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                // Image du Véhicule
                 Container(
                   width: 90,
                   height: 90,
@@ -413,18 +393,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(15),
-                    child: Image.asset(
-                      item.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (c, e, s) => const Icon(
-                        Icons.directions_car,
-                        color: kPrimaryColor,
-                      ),
-                    ),
+                    child: item.imageUrl.startsWith('http')
+                        ? Image.network(item.imageUrl, fit: BoxFit.cover)
+                        : Image.asset(
+                            'assets/images/placeholder.png',
+                            fit: BoxFit.cover,
+                          ),
                   ),
                 ),
                 const SizedBox(width: 15),
-                // Détails
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -501,67 +478,96 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ],
             ),
           ),
-
-          // --- BAS : BOUTONS D'ACTION DYNAMIQUES ---
           _buildActionButtons(item),
         ],
       ),
     );
   }
 
-  // --- LOGIQUE DES BOUTONS SELON LE RÔLE ET LE STATUT ---
+  // --- ACTIONS BRANCHÉES SUR LA BOÎTE DE DIALOGUE ---
   Widget _buildActionButtons(UnifiedHistoryItem item) {
     List<Widget> buttons = [];
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    bool isMyListing = item.ownerId == currentUserId;
 
-    // --- VUE CLIENT ---
-    if (!item.isMyListing) {
-      if (item.type == 'Location' && item.status == 'En cours') {
+    if (!isMyListing) {
+      // --- VUE CLIENT ---
+      if (item.type == 'Location' && item.status == 'En attente') {
         buttons.add(
           _actionBtn(
-            "Arrêter",
+            "Annuler la demande",
             Colors.red,
             outlined: true,
-            () => _executeAction("Demande d'arrêt anticipé envoyée."),
+            () => _showConfirmationDialog(
+              title: "Annuler la demande",
+              message:
+                  "Êtes-vous sûr de vouloir annuler votre demande de location pour ce véhicule ?",
+              isDestructive: true,
+              onConfirm: () => _handleBookingAction(
+                item,
+                "Annulé",
+                true,
+                "Réservation annulée.",
+              ),
+            ),
           ),
         );
-        buttons.add(const SizedBox(width: 10));
+      } else if (item.type == 'Location' && item.status == 'En cours') {
         buttons.add(
           _actionBtn(
-            "Prolonger",
-            kPrimaryColor,
-            outlined: false,
-            () => _executeAction("Redirection vers la prolongation..."),
+            "Terminer la location",
+            Colors.red,
+            outlined: true,
+            () => _showConfirmationDialog(
+              title: "Terminer la location",
+              message:
+                  "Confirmez-vous que vous avez restitué le véhicule au propriétaire ?",
+              isDestructive: true,
+              onConfirm: () => _handleBookingAction(
+                item,
+                "Terminé",
+                true,
+                "Location terminée !",
+              ),
+            ),
           ),
         );
       } else if (item.type == 'Vente' && item.status == 'Négociation') {
         buttons.add(
           _actionBtn(
-            "Améliorer l'offre",
-            Colors.orange.shade700,
-            outlined: false,
-            () => _executeAction("Redirection vers la négociation..."),
-          ),
-        );
-      } else if (item.status == 'Terminé') {
-        buttons.add(
-          _actionBtn(
-            "Noter l'expérience",
-            Colors.black87,
-            outlined: false,
-            () => _executeAction("Ouverture du formulaire d'évaluation..."),
+            "Annuler l'offre",
+            Colors.red,
+            outlined: true,
+            () => _showConfirmationDialog(
+              title: "Annuler l'offre",
+              message: "Voulez-vous vraiment retirer votre offre d'achat ?",
+              isDestructive: true,
+              onConfirm: () =>
+                  _handleBookingAction(item, "Annulé", true, "Offre annulée."),
+            ),
           ),
         );
       }
-    }
-    // --- VUE PROPRIÉTAIRE ---
-    else {
+    } else {
+      // --- VUE PROPRIÉTAIRE ---
       if (item.type == 'Location' && item.status == 'En attente') {
         buttons.add(
           _actionBtn(
             "Refuser",
             Colors.red,
             outlined: true,
-            () => _executeAction("Demande refusée."),
+            () => _showConfirmationDialog(
+              title: "Refuser la demande",
+              message:
+                  "Voulez-vous vraiment refuser cette demande de location ?",
+              isDestructive: true,
+              onConfirm: () => _handleBookingAction(
+                item,
+                "Rejeté",
+                true,
+                "Demande refusée.",
+              ),
+            ),
           ),
         );
         buttons.add(const SizedBox(width: 10));
@@ -570,7 +576,52 @@ class _HistoryScreenState extends State<HistoryScreen> {
             "Accepter",
             kPrimaryColor,
             outlined: false,
-            () => _executeAction("Demande de location acceptée !"),
+            () => _showConfirmationDialog(
+              title: "Accepter la location",
+              message:
+                  "Voulez-vous valider cette location et bloquer les dates pour ce client ?",
+              onConfirm: () => _handleBookingAction(
+                item,
+                "En cours",
+                false,
+                "Demande acceptée !",
+              ),
+            ),
+          ),
+        );
+      } else if (item.type == 'Vente' && item.status == 'Négociation') {
+        buttons.add(
+          _actionBtn(
+            "Refuser",
+            Colors.red,
+            outlined: true,
+            () => _showConfirmationDialog(
+              title: "Refuser l'offre",
+              message:
+                  "Voulez-vous vraiment rejeter cette proposition d'achat ?",
+              isDestructive: true,
+              onConfirm: () =>
+                  _handleBookingAction(item, "Rejeté", true, "Offre refusée."),
+            ),
+          ),
+        );
+        buttons.add(const SizedBox(width: 10));
+        buttons.add(
+          _actionBtn(
+            "Accepter l'offre",
+            kPrimaryColor,
+            outlined: false,
+            () => _showConfirmationDialog(
+              title: "Accepter l'offre",
+              message:
+                  "En acceptant cette offre, vous vous engagez à vendre le véhicule à ce client.",
+              onConfirm: () => _handleBookingAction(
+                item,
+                "Fonds Validés",
+                false,
+                "Offre acceptée !",
+              ),
+            ),
           ),
         );
       } else if (item.type == 'Vente' && item.status == 'Fonds Validés') {
@@ -579,16 +630,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
             "Confirmer livraison",
             Colors.green,
             outlined: false,
-            () => _executeAction("Livraison confirmée. Clôture de la vente."),
-          ),
-        );
-      } else if (item.status == 'Terminé') {
-        buttons.add(
-          _actionBtn(
-            "Noter le client",
-            Colors.black87,
-            outlined: false,
-            () => _executeAction("Ouverture de l'évaluation du client..."),
+            () => _showConfirmationDialog(
+              title: "Confirmer la livraison",
+              message:
+                  "Confirmez-vous avoir livré le véhicule à l'acheteur ? Cette action clôturera la vente définitivement.",
+              onConfirm: () => _handleBookingAction(
+                item,
+                "Terminé",
+                false,
+                "Vente clôturée.",
+              ),
+            ),
           ),
         );
       }
@@ -611,7 +663,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  // --- WIDGET HELPER POUR GÉNÉRER UN BOUTON ---
   Widget _actionBtn(
     String label,
     Color color,
@@ -662,20 +713,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Widget _buildEmptyMessage() {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.inbox_outlined, size: 80, color: Colors.grey.shade300),
-            const SizedBox(height: 20),
-            Text(
-              "Aucun élément trouvé pour cette section.",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
-            ),
-          ],
-        ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.inbox_outlined, size: 80, color: Colors.grey.shade300),
+          const SizedBox(height: 20),
+          Text(
+            "Aucun élément trouvé.",
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+          ),
+        ],
       ),
     );
   }

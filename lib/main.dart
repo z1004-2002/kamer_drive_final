@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:kamer_drive_final/core/routes/app_router.dart';
 import 'package:kamer_drive_final/features/auth/providers/auth_provider.dart';
+import 'package:kamer_drive_final/features/booking/providers/booking_provider.dart';
 import 'package:kamer_drive_final/features/home/providers/home_provider.dart';
 import 'package:kamer_drive_final/features/my_listings/providers/vehicle_provider.dart';
 import 'package:kamer_drive_final/features/profile/providers/profile_provider.dart';
@@ -20,6 +21,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => HomeProvider()),
         ChangeNotifierProvider(create: (_) => SearchProvider()),
+        ChangeNotifierProvider(create: (_) => BookingProvider()),
       ],
       child: const KamerDriveApp(),
     ),

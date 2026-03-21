@@ -584,7 +584,7 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // --- CARTE DE RÉSULTAT ---
+  // --- CARTE DE RÉSULTAT (Mise à jour avec Badges) ---
   Widget _buildSearchResultCard(VehicleModel vehicle) {
     // Logique adaptative : si on est sur "Tout", on priorise l'affichage Location s'il est dispo, sinon Vente.
     bool isRentContext =
@@ -601,7 +601,7 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
-        height: 110,
+        height: 120, // Légèrement agrandi pour bien aérer le contenu
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -615,44 +615,112 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
         child: Row(
           children: [
-            // IMAGE
-            Container(
-              width: 110,
+            // --- IMAGE AVEC BADGES ---
+            SizedBox(
+              width: 120, // Largeur fixe pour l'image
               height: double.infinity,
-              decoration: BoxDecoration(
-                color: lPrimaryColor,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(15),
-                ),
-                child:
-                    vehicle.images.isNotEmpty &&
-                        vehicle.images.first.startsWith('http')
-                    ? Image.network(
-                        vehicle.images.first,
-                        fit: BoxFit.cover,
-                        errorBuilder: (c, e, s) => const Icon(
-                          Icons.directions_car,
-                          size: 30,
-                          color: kPrimaryColor,
-                        ),
-                      )
-                    : Image.asset(
-                        'assets/images/placeholder.png', // Image de secours
-                        fit: BoxFit.cover,
-                        errorBuilder: (c, e, s) => const Icon(
-                          Icons.directions_car,
-                          size: 30,
-                          color: kPrimaryColor,
-                        ),
+              child: Stack(
+                children: [
+                  // L'image de fond
+                  Container(
+                    width: double.infinity,
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      color: lPrimaryColor,
+                      borderRadius: const BorderRadius.horizontal(
+                        left: Radius.circular(20),
                       ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.horizontal(
+                        left: Radius.circular(20),
+                      ),
+                      child:
+                          vehicle.images.isNotEmpty &&
+                              vehicle.images.first.startsWith('http')
+                          ? Image.network(
+                              vehicle.images.first,
+                              fit: BoxFit.cover,
+                              errorBuilder: (c, e, s) => const Icon(
+                                Icons.directions_car,
+                                size: 30,
+                                color: kPrimaryColor,
+                              ),
+                            )
+                          : Image.asset(
+                              'assets/images/placeholder.png', // Image de secours
+                              fit: BoxFit.cover,
+                              errorBuilder: (c, e, s) => const Icon(
+                                Icons.directions_car,
+                                size: 30,
+                                color: kPrimaryColor,
+                              ),
+                            ),
+                    ),
+                  ),
+
+                  // LES BADGES MULTIPLES (Positionnés en haut à gauche)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Badge Location
+                        if (vehicle.isForRent &&
+                            (_transactionType == 'all' ||
+                                _transactionType == 'rent'))
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: kPrimaryColor,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              "Location",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        // Badge Vente
+                        if (vehicle.isForSale &&
+                            (_transactionType == 'all' ||
+                                _transactionType == 'sale'))
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade700,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              "Vente",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
+
             const SizedBox(width: 15),
 
-            // INFOS
+            // --- INFOS DU VÉHICULE ---
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -696,7 +764,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // PRIX
+                  // AFFICHAGE DU PRIX
                   if (isRentContext && vehicle.rentPricePerDay != null)
                     Text(
                       "${vehicle.rentPricePerDay!.toInt()} FCFA /j",

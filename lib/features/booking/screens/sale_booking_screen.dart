@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kamer_drive_final/features/home/providers/home_provider.dart';
+import 'package:kamer_drive_final/features/search/provider/search_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -104,11 +106,17 @@ class _SaleBookingScreenState extends State<SaleBookingScreen> {
           context,
           "Votre offre a été envoyée ! Le propriétaire vous contactera.",
         );
+
+        // --- NOUVEAU: Rafraîchir les listes ---
+        context.read<HomeProvider>().fetchHomeData();
+        context.read<SearchProvider>().fetchAllVehicles();
+
         context.pop();
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         SnackbarUtils.showError(context, "Erreur lors de l'envoi de l'offre.");
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
