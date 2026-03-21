@@ -5,6 +5,7 @@ import 'package:kamer_drive_final/shared/widgets/vehicle_details_modal.dart';
 import 'package:provider/provider.dart';
 import '../../../models/vehicle_model.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../providers/home_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onNavigateToSearch;
@@ -16,215 +17,28 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  //  List<VehicleModel> _rentalVehicles = [];
-  //  List<VehicleModel> _saleVehicles = [];
-  List<VehicleModel> _rentalVehicles = [
-    VehicleModel(
-      id: "1",
-      ownerId: "user1",
-      brand: "Toyota",
-      modelName: "Corolla",
-      year: 2021,
-      city: "Douala",
-      address: "",
-      images: [
-        "assets/images/cars/car1.jpg",
-        "assets/images/cars/car1.jpg",
-        "assets/images/cars/car1.jpg",
-      ],
-      description:
-          "Superbe Toyota Corolla très économique, parfaite pour vos courses en ville. Entretien à jour.",
-      registrationPlateUrl: "",
-      registrationDocumentUrl: "",
-      insuranceCertificateUrl: "",
-      validationStatus: "Validé",
-      isForRent: true,
-      rentPricePerDay: 35000,
-      withDriverOption: true,
-      rentPriceWithDriver: 50000,
-      securityDeposit:
-          5000000, // Attention, 5 millions de caution pour une Corolla ça pique un peu ! 😁
-      isForSale: true,
-      salePrice: 15000000,
-      seats: 5,
-      gearbox: "Automatique",
-      fuelType: "Essence",
-      hasAC: true,
-      reviews: [],
-      createdAt: DateTime.now().subtract(const Duration(days: 8)),
-      updatedAt: DateTime.now(),
-    ),
-    VehicleModel(
-      id: "2",
-      ownerId: "user2",
-      brand: "Hyundai",
-      modelName: "Tucson",
-      year: 2022,
-      city: "Yaoundé",
-      address: "",
-      images: [
-        "assets/images/cars/car2.jpg",
-        "assets/images/cars/car2.jpg",
-        "assets/images/cars/car2.jpg",
-      ],
-      description:
-          "SUV spacieux et confortable pour vos voyages en famille. Sièges en cuir.",
-      registrationPlateUrl: "",
-      registrationDocumentUrl: "",
-      insuranceCertificateUrl: "",
-      validationStatus: "Validé",
-      isForRent: true,
-      rentPricePerDay: 60000,
-      withDriverOption: false,
-      securityDeposit: 4000000,
-      isForSale: false,
-      seats: 4,
-      gearbox: "Automatique",
-      fuelType: "Diesel",
-      hasAC: true,
-      reviews: [],
-      createdAt: DateTime.now().subtract(const Duration(days: 3)),
-      updatedAt: DateTime.now(),
-    ),
-    VehicleModel(
-      id: "1_dup", // J'ai légèrement modifié l'ID pour éviter les conflits dans Flutter
-      ownerId: "user1",
-      brand: "Toyota",
-      modelName: "Corolla",
-      year: 2021,
-      city: "Douala",
-      address: "",
-      images: [
-        "assets/images/cars/car1.jpg",
-        "assets/images/cars/car1.jpg",
-        "assets/images/cars/car1.jpg",
-      ],
-      description:
-          "Superbe Toyota Corolla très économique, parfaite pour vos courses en ville. Entretien à jour.",
-      registrationPlateUrl: "",
-      registrationDocumentUrl: "",
-      insuranceCertificateUrl: "",
-      validationStatus: "Validé",
-      isForRent: true,
-      rentPricePerDay: 35000,
-      securityDeposit: 4500000,
-      withDriverOption: true,
-      rentPriceWithDriver: 50000,
-      isForSale: false,
-      seats: 5,
-      gearbox: "Automatique",
-      fuelType: "Essence",
-      hasAC: true,
-      reviews: [],
-      createdAt: DateTime.now().subtract(const Duration(days: 1)),
-      updatedAt: DateTime.now(),
-    ),
-  ];
-
-  List<VehicleModel> _saleVehicles = [
-    VehicleModel(
-      id: "3_sale_1",
-      ownerId: "user3",
-      brand: "Mercedes-Benz",
-      modelName: "C300",
-      year: 2019,
-      city: "Douala",
-      address: "",
-      images: [
-        "assets/images/cars/car2.jpg",
-        "assets/images/cars/car2.jpg",
-        "assets/images/cars/car2.jpg",
-      ],
-      description:
-          "Véhicule de luxe en parfait état. Moteur V6, toit ouvrant panoramique.",
-      registrationPlateUrl: "",
-      registrationDocumentUrl: "",
-      insuranceCertificateUrl: "",
-      validationStatus: "Validé",
-      isForRent: false,
-      isForSale: true,
-      salePrice: 15000000,
-      withDriverOption: false,
-      seats: 5,
-      gearbox: "Automatique",
-      fuelType: "Essence",
-      hasAC: true,
-      reviews: [],
-      createdAt: DateTime.now().subtract(const Duration(days: 12)),
-      updatedAt: DateTime.now(),
-    ),
-    VehicleModel(
-      id: "1_sale",
-      ownerId: "user1",
-      brand: "Toyota",
-      modelName: "Corolla",
-      year: 2021,
-      city: "Douala",
-      address: "",
-      images: [
-        "assets/images/cars/car1.jpg",
-        "assets/images/cars/car1.jpg",
-        "assets/images/cars/car1.jpg",
-      ],
-      description:
-          "Superbe Toyota Corolla très économique, parfaite pour vos courses en ville. Entretien à jour.",
-      registrationPlateUrl: "",
-      registrationDocumentUrl: "",
-      insuranceCertificateUrl: "",
-      validationStatus: "Validé",
-      isForRent: true,
-      rentPricePerDay: 35000,
-      withDriverOption: true,
-      rentPriceWithDriver: 50000,
-      securityDeposit: 300000, // Je l'ai un peu baissée ici 😉
-      isForSale: true,
-      salePrice: 15000000,
-      seats: 5,
-      gearbox: "Automatique",
-      fuelType: "Essence",
-      hasAC: true,
-      reviews: [],
-      createdAt: DateTime.now().subtract(const Duration(days: 6)),
-      updatedAt: DateTime.now(),
-    ),
-    VehicleModel(
-      id: "3_sale_2",
-      ownerId: "user3",
-      brand: "Mercedes-Benz",
-      modelName: "C300",
-      year: 2019,
-      city: "Douala",
-      address: "",
-      images: [
-        "assets/images/cars/car1.jpg",
-        "assets/images/cars/car1.jpg",
-        "assets/images/cars/car1.jpg",
-      ],
-      description:
-          "Véhicule de luxe en parfait état. Moteur V6, toit ouvrant panoramique.",
-      registrationPlateUrl: "",
-      registrationDocumentUrl: "",
-      insuranceCertificateUrl: "",
-      validationStatus: "Validé",
-      isForRent: false,
-      isForSale: true,
-      salePrice: 15000000,
-      withDriverOption: false,
-      seats: 5,
-      gearbox: "Automatique",
-      fuelType: "Essence",
-      hasAC: true,
-      reviews: [],
-      createdAt: DateTime.now().subtract(const Duration(days: 4)),
-      updatedAt: DateTime.now(),
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // On demande au provider de charger les données au chargement de la page
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<HomeProvider>().fetchHomeData();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
+
+    // Écoute de l'utilisateur connecté pour le Header
     final currentUser = context.watch<AuthProvider>().currentUser;
     final userName = currentUser?.firstName ?? "Utilisateur";
+
+    // Écoute des données du HomeProvider
+    final homeProvider = context.watch<HomeProvider>();
+    final rentalVehicles = homeProvider.recentRentalVehicles;
+    final saleVehicles = homeProvider.recentSaleVehicles;
+    final isLoading = homeProvider.isLoading;
 
     return Scaffold(
       backgroundColor: kBackgroundColor,
@@ -268,99 +82,116 @@ class _HomeScreenState extends State<HomeScreen> {
 
           Column(
             children: [
-              _buildFixedHeader(userName),
+              // NOUVEAU HEADER (Intègre maintenant la barre de recherche)
+              _buildFixedHeader(userName, widget.onNavigateToSearch),
 
               Expanded(
-                // 1. ON AJOUTE LE REFRESH INDICATOR ICI
                 child: RefreshIndicator(
-                  onRefresh: _refreshData, // Appel de notre fonction
-                  color: kPrimaryColor, // Couleur du petit cercle de chargement
+                  onRefresh: _refreshData,
+                  color: kPrimaryColor,
                   backgroundColor: Colors.white,
-
                   child: SingleChildScrollView(
-                    // 2. ASTUCE CRUCIALE : AlwaysScrollableScrollPhysics
-                    // Cela force la page à être "scrollable" même s'il n'y a pas assez
-                    // de voitures pour remplir l'écran, permettant au RefreshIndicator de fonctionner.
                     physics: const AlwaysScrollableScrollPhysics(
                       parent: BouncingScrollPhysics(),
                     ),
-                    padding: const EdgeInsets.only(top: 15, bottom: 80),
+                    padding: const EdgeInsets.only(
+                      top: 15,
+                      bottom: 40,
+                    ), // J'ai réduit le padding bas vu que la barre n'y est plus
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // SECTION LOCATION
+                        // --- SECTION LOCATION ---
                         _buildSectionTitle(
                           "Véhicules en Location",
                           () => widget.onNavigateToSearch(),
                         ),
-                        _rentalVehicles.isEmpty
-                            ? _buildEmptyStateMessage(
-                                "Rien à louer pour le moment",
-                                "Les véhicules disponibles à la location apparaîtront ici.",
-                                Icons.car_rental,
-                              )
-                            : SizedBox(
-                                height: 260,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  physics: const BouncingScrollPhysics(),
-                                  padding: const EdgeInsets.only(left: 20),
-                                  itemCount: _rentalVehicles.length,
-                                  itemBuilder: (context, index) => _buildVehicleCard(
-                                    _rentalVehicles[index],
+
+                        if (isLoading && rentalVehicles.isEmpty)
+                          const SizedBox(
+                            height: 260,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: kPrimaryColor,
+                              ),
+                            ),
+                          )
+                        else if (rentalVehicles.isEmpty)
+                          _buildEmptyStateMessage(
+                            "Rien à louer pour le moment",
+                            "Les véhicules disponibles à la location apparaîtront ici.",
+                            Icons.car_rental,
+                          )
+                        else
+                          SizedBox(
+                            height: 260,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              physics: const BouncingScrollPhysics(),
+                              padding: const EdgeInsets.only(left: 20),
+                              itemCount: rentalVehicles.length,
+                              itemBuilder: (context, index) =>
+                                  _buildVehicleCard(
+                                    rentalVehicles[index],
                                     isRentContext: true,
                                     onTap: () {
-                                      // APPEL DE LA MODAL
                                       showVehicleDetailsModal(
                                         context,
-                                        _rentalVehicles[index],
-                                        isRentContext:
-                                            true, // Contexte Location pour la modal
-                                        isOwnerView:
-                                            false, // On cache le prix de vente si le client loue
+                                        rentalVehicles[index],
+                                        isRentContext: true,
+                                        isOwnerView: false,
                                       );
                                     },
                                   ),
-                                ),
-                              ),
+                            ),
+                          ),
 
                         const SizedBox(height: 20),
 
-                        // SECTION VENTE
+                        // --- SECTION VENTE ---
                         _buildSectionTitle(
                           "Véhicules à Vendre",
                           () => widget.onNavigateToSearch(),
                         ),
-                        _saleVehicles.isEmpty
-                            ? _buildEmptyStateMessage(
-                                "Aucune voiture à vendre",
-                                "Les véhicules mis en vente par les propriétaires s'afficheront ici.",
-                                Icons.sell_outlined,
-                              )
-                            : SizedBox(
-                                height: 260,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  physics: const BouncingScrollPhysics(),
-                                  padding: const EdgeInsets.only(left: 20),
-                                  itemCount: _saleVehicles.length,
-                                  itemBuilder: (context, index) => _buildVehicleCard(
-                                    _saleVehicles[index],
+
+                        if (isLoading && saleVehicles.isEmpty)
+                          const SizedBox(
+                            height: 260,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.orange,
+                              ),
+                            ),
+                          )
+                        else if (saleVehicles.isEmpty)
+                          _buildEmptyStateMessage(
+                            "Aucune voiture à vendre",
+                            "Les véhicules mis en vente par les propriétaires s'afficheront ici.",
+                            Icons.sell_outlined,
+                          )
+                        else
+                          SizedBox(
+                            height: 260,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              physics: const BouncingScrollPhysics(),
+                              padding: const EdgeInsets.only(left: 20),
+                              itemCount: saleVehicles.length,
+                              itemBuilder: (context, index) =>
+                                  _buildVehicleCard(
+                                    saleVehicles[index],
                                     isRentContext: false,
                                     onTap: () {
-                                      // APPEL DE LA MODAL
                                       showVehicleDetailsModal(
                                         context,
-                                        _saleVehicles[index],
-                                        isRentContext:
-                                            false, // Contexte Vente pour la modal
-                                        isOwnerView:
-                                            false, // On cache le prix de location
+                                        saleVehicles[index],
+                                        isRentContext: false,
+                                        isOwnerView: false,
                                       );
                                     },
                                   ),
-                                ),
-                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -373,12 +204,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // HEADER AVEC LA CORRECTION D'OVERFLOW
-  Widget _buildFixedHeader(String userName) {
+  // --- LE NOUVEAU HEADER MAGIQUE ---
+  Widget _buildFixedHeader(String userName, VoidCallback onSearch) {
     return SizedBox(
-      height: 215,
+      height:
+          215, // La hauteur totale laisse de la place pour la barre de recherche
       child: Stack(
         children: [
+          // Le fond vert (S'arrête un peu avant la fin pour laisser déborder la barre)
           Container(
             height: 190,
             width: double.infinity,
@@ -442,14 +275,17 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+
+          // LA BARRE DE RECHERCHE DÉPLACÉE ICI
           Positioned(
-            bottom: 0,
+            bottom:
+                5, // Chevauche parfaitement la bordure arrondie du fond vert
             left: 20,
             right: 20,
             child: GestureDetector(
-              onTap: widget.onNavigateToSearch,
+              onTap: onSearch,
               child: Container(
-                height: 50,
+                height: 55,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -457,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     BoxShadow(
                       offset: const Offset(0, 5),
                       blurRadius: 10,
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withOpacity(0.08),
                     ),
                   ],
                 ),
@@ -469,17 +305,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       "Rechercher une voiture...",
                       style: TextStyle(
-                        color: Colors.grey.shade400,
+                        color: Colors.grey.shade500,
                         fontSize: 14,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const Spacer(),
                     Container(
-                      margin: const EdgeInsets.all(5),
+                      margin: const EdgeInsets.all(6),
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: lPrimaryColor,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(15),
                       ),
                       child: const Icon(
                         Icons.tune,
@@ -523,14 +360,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // CARTE DE VÉHICULE CLIQUABLE
-  // Ajout du paramètre isRentContext
   Widget _buildVehicleCard(
     VehicleModel vehicle, {
     required bool isRentContext,
     required VoidCallback onTap,
   }) {
-    // 1. On définit l'affichage en fonction du CONTEXTE (Location ou Vente)
     String priceDisplay = isRentContext
         ? "${vehicle.rentPricePerDay?.toInt() ?? 0} FCFA"
         : "${vehicle.salePrice?.toInt() ?? 0} FCFA";
@@ -539,9 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Color themeColor = isRentContext ? kPrimaryColor : Colors.orange.shade600;
     String badgeText = isRentContext ? "Location" : "Vente";
 
-    double rating = vehicle.reviews.isEmpty
-        ? 4.8
-        : 4.8; // Simplifié pour le design
+    double rating = vehicle.reviews.isEmpty ? 4.8 : 4.8;
 
     return GestureDetector(
       onTap: onTap,
@@ -577,18 +409,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(20),
                     ),
-                    // N'oublie pas de remettre Image.network quand tu passeras aux vraies données !
-                    child: Image.asset(
-                      vehicle.images.isNotEmpty
-                          ? vehicle.images.first
-                          : 'assets/images/placeholder.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (c, e, s) => const Icon(
-                        Icons.directions_car,
-                        size: 60,
-                        color: kPrimaryColor,
-                      ),
-                    ),
+                    child:
+                        vehicle.images.isNotEmpty &&
+                            vehicle.images.first.startsWith('http')
+                        ? Image.network(
+                            vehicle.images.first,
+                            fit: BoxFit.cover,
+                            errorBuilder: (c, e, s) => const Icon(
+                              Icons.directions_car,
+                              size: 60,
+                              color: kPrimaryColor,
+                            ),
+                          )
+                        : Image.asset(
+                            'assets/images/placeholder.png',
+                            fit: BoxFit.cover,
+                            errorBuilder: (c, e, s) => const Icon(
+                              Icons.directions_car,
+                              size: 60,
+                              color: kPrimaryColor,
+                            ),
+                          ),
                   ),
                 ),
                 Positioned(
@@ -600,11 +441,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: themeColor, // Utilisation de la couleur dynamique
+                      color: themeColor,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
-                      badgeText, // Texte dynamique
+                      badgeText,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
@@ -695,8 +536,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color:
-                              themeColor, // Utilisation de la couleur dynamique
+                          color: themeColor,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
@@ -716,7 +556,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- WIDGET HELPER : MESSAGE STATIQUE SI LISTE VIDE ---
   Widget _buildEmptyStateMessage(String title, String subtitle, IconData icon) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -737,7 +576,6 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Icône dans un cercle aux couleurs de l'appli
           Container(
             padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
@@ -747,8 +585,6 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Icon(icon, color: kPrimaryColor, size: 35),
           ),
           const SizedBox(height: 15),
-
-          // Titre principal
           Text(
             title,
             style: const TextStyle(
@@ -758,8 +594,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 8),
-
-          // Sous-titre explicatif
           Text(
             subtitle,
             textAlign: TextAlign.center,
@@ -772,21 +606,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
-  } // --- FONCTION DE RAFRAÎCHISSEMENT ---
+  }
 
   Future<void> _refreshData() async {
-    // Si tu as connecté ton VehicleProvider, c'est ici que tu rappelles la base de données.
-    // Exemple : await Provider.of<VehicleProvider>(context, listen: false).fetchHomeVehicles();
-
-    // Pour l'instant, on simule un temps de chargement de 1.5 secondes
-    await Future.delayed(const Duration(milliseconds: 1500));
-
-    // On met à jour l'interface (setState) pour refléter les nouvelles données
-    if (mounted) {
-      setState(() {
-        _rentalVehicles = _rentalVehicles;
-        _saleVehicles = _saleVehicles;
-      });
-    }
+    await context.read<HomeProvider>().fetchHomeData();
   }
 }

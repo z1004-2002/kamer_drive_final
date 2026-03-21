@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kamer_drive_final/features/search/provider/search_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
 import 'package:kamer_drive_final/shared/widgets/vehicle_details_modal.dart';
 import '../../../models/vehicle_model.dart';
@@ -18,140 +20,42 @@ class _SearchScreenState extends State<SearchScreen> {
 
   String _transactionType = "all"; // 'all', 'rent', 'sale'
   String _selectedBrand = "Toutes";
-  String _selectedGearbox = "Toutes"; // 'Toutes', 'Automatique', 'Manuelle'
-  String _selectedFuel =
-      "Tous"; // 'Tous', 'Essence', 'Diesel', 'Hybride', 'Électrique'
+  String _selectedGearbox = "Toutes"; // Contient bien 'Semi-automatique'
+  String _selectedFuel = "Tous";
   double _minSeats = 2;
   bool _requireAC = false;
 
-  // Plages de prix par défaut
   RangeValues _rentPriceRange = const RangeValues(10000, 200000);
   RangeValues _salePriceRange = const RangeValues(1000000, 50000000);
 
-  // --- DONNÉES STATIQUES POUR LE TEST ---
-  final List<VehicleModel> _staticVehicles = [
-    VehicleModel(
-      id: "1",
-      ownerId: "owner1",
-      brand: "Toyota",
-      modelName: "RAV4",
-      year: 2021,
-      city: "Yaoundé",
-      address: "Bastos",
-      images: ['assets/images/cars/car1.jpg'],
-      description: "Superbe RAV4 récent, très confortable.",
-      registrationPlateUrl: "",
-      registrationDocumentUrl: "",
-      insuranceCertificateUrl: "",
-      validationStatus: "Validé",
-      isForRent: true,
-      rentPricePerDay: 45000,
-      rentPriceWithDriver: 60000, // Ajouté
-      securityDeposit: 100000,
-      withDriverOption: true,
-      isForSale: false,
-      salePrice: null,
-      seats: 5,
-      gearbox: "Automatique",
-      fuelType: "Essence",
-      hasAC: true,
-      reviews: [],
-      createdAt: DateTime.now().subtract(const Duration(days: 10)),
-      updatedAt: DateTime.now().subtract(const Duration(days: 2)),
-    ),
-    VehicleModel(
-      id: "2",
-      ownerId: "owner2",
-      brand: "Mercedes",
-      modelName: "Classe C",
-      year: 2019,
-      city: "Douala",
-      address: "Bonapriso",
-      images: ['assets/images/cars/car2.jpg'],
-      description: "Berline de luxe idéale pour les mariages ou VIP.",
-      registrationPlateUrl: "",
-      registrationDocumentUrl: "",
-      insuranceCertificateUrl: "",
-      validationStatus: "Validé",
-      isForRent: true,
-      rentPricePerDay: 80000,
-      rentPriceWithDriver: 100000, // Ajouté
-      securityDeposit: 200000,
-      withDriverOption: true,
-      isForSale: true,
-      salePrice: 18000000,
-      seats: 5,
-      gearbox: "Automatique",
-      fuelType: "Essence",
-      hasAC: true,
-      reviews: [],
-      createdAt: DateTime.now().subtract(const Duration(days: 15)),
-      updatedAt: DateTime.now().subtract(const Duration(days: 1)),
-    ),
-    VehicleModel(
-      id: "3",
-      ownerId: "owner3",
-      brand: "Suzuki",
-      modelName: "Alto",
-      year: 2015,
-      city: "Yaoundé",
-      address: "Essos",
-      images: ['assets/images/cars/car1.jpg'],
-      description: "Petite citadine économique, parfaite pour la ville.",
-      registrationPlateUrl: "",
-      registrationDocumentUrl: "",
-      insuranceCertificateUrl: "",
-      validationStatus: "Validé",
-      isForRent: false,
-      rentPricePerDay: null,
-      rentPriceWithDriver: null,
-      securityDeposit: null,
-      withDriverOption: false,
-      isForSale: true,
-      salePrice: 3500000,
-      seats: 4,
-      gearbox: "Manuelle",
-      fuelType: "Essence",
-      hasAC: false,
-      reviews: [],
-      createdAt: DateTime.now().subtract(const Duration(days: 20)),
-      updatedAt: DateTime.now().subtract(const Duration(days: 5)),
-    ),
-    VehicleModel(
-      id: "4",
-      ownerId: "owner4",
-      brand: "Toyota",
-      modelName: "Prado",
-      year: 2020,
-      city: "Douala",
-      address: "Akwa",
-      images: ['assets/images/cars/car2.jpg'],
-      description: "4x4 robuste pour tous les terrains.",
-      registrationPlateUrl: "",
-      registrationDocumentUrl: "",
-      insuranceCertificateUrl: "",
-      validationStatus: "Validé",
-      isForRent: true,
-      rentPricePerDay: 100000,
-      rentPriceWithDriver: 120000, // Ajouté
-      securityDeposit: 300000,
-      withDriverOption: true,
-      isForSale: false,
-      salePrice: null,
-      seats: 7,
-      gearbox: "Automatique",
-      fuelType: "Diesel",
-      hasAC: true,
-      reviews: [],
-      createdAt: DateTime.now().subtract(const Duration(days: 5)),
-      updatedAt: DateTime.now(),
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // On charge les données depuis Firebase au démarrage
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<SearchProvider>().fetchAllVehicles();
+    });
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  // --- LOGIQUE POUR DÉCLENCHER LE FILTRE ---
+  void _triggerFilter() {
+    context.read<SearchProvider>().applyFilters(
+      searchQuery: _searchQuery,
+      transactionType: _transactionType,
+      brand: _selectedBrand,
+      gearbox: _selectedGearbox,
+      fuelType: _selectedFuel,
+      minSeats: _minSeats,
+      requireAC: _requireAC,
+      rentPriceRange: _rentPriceRange,
+      salePriceRange: _salePriceRange,
+    );
   }
 
   // --- LOGIQUE DE RÉINITIALISATION ---
@@ -166,45 +70,7 @@ class _SearchScreenState extends State<SearchScreen> {
       _rentPriceRange = const RangeValues(10000, 200000);
       _salePriceRange = const RangeValues(1000000, 50000000);
     });
-  }
-
-  // --- LOGIQUE DE FILTRAGE ---
-  List<VehicleModel> _filterVehicles(List<VehicleModel> vehicles) {
-    return vehicles.where((v) {
-      if (v.validationStatus.toLowerCase() != 'validé' &&
-          v.validationStatus.toLowerCase() != 'valide')
-        return false;
-
-      // 1. Recherche textuelle
-      if (_searchQuery.isNotEmpty) {
-        String fullName = "${v.brand} ${v.modelName}".toLowerCase();
-        if (!fullName.contains(_searchQuery.toLowerCase())) return false;
-      }
-
-      // 2. Filtres Basiques
-      if (_transactionType == 'rent' && !v.isForRent) return false;
-      if (_transactionType == 'sale' && !v.isForSale) return false;
-      if (_selectedBrand != 'Toutes' && v.brand != _selectedBrand) return false;
-      if (_selectedGearbox != 'Toutes' && v.gearbox != _selectedGearbox)
-        return false;
-      if (_selectedFuel != 'Tous' && v.fuelType != _selectedFuel) return false;
-      if (v.seats < _minSeats) return false;
-      if (_requireAC && !v.hasAC) return false;
-
-      // 3. Filtres de Prix
-      if (_transactionType == 'rent' && v.rentPricePerDay != null) {
-        if (v.rentPricePerDay! < _rentPriceRange.start ||
-            v.rentPricePerDay! > _rentPriceRange.end)
-          return false;
-      }
-      if (_transactionType == 'sale' && v.salePrice != null) {
-        if (v.salePrice! < _salePriceRange.start ||
-            v.salePrice! > _salePriceRange.end)
-          return false;
-      }
-
-      return true;
-    }).toList();
+    _triggerFilter();
   }
 
   // --- MODAL DES FILTRES ---
@@ -325,9 +191,10 @@ class _SearchScreenState extends State<SearchScreen> {
                           const SizedBox(height: 25),
 
                           // 2. PRIX (Adaptatif)
-                          if (_transactionType == 'rent') ...[
+                          if (_transactionType == 'rent' ||
+                              _transactionType == 'all') ...[
                             Text(
-                              "Prix par jour : ${_rentPriceRange.start.toInt()} à ${_rentPriceRange.end.toInt()} FCFA",
+                              "Prix location : ${_rentPriceRange.start.toInt()} à ${_rentPriceRange.end.toInt()} FCFA/j",
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -343,9 +210,12 @@ class _SearchScreenState extends State<SearchScreen> {
                                   setModalState(() => _rentPriceRange = values),
                             ),
                             const SizedBox(height: 25),
-                          ] else if (_transactionType == 'sale') ...[
+                          ],
+
+                          if (_transactionType == 'sale' ||
+                              _transactionType == 'all') ...[
                             Text(
-                              "Budget : ${(_salePriceRange.start / 1000000).toStringAsFixed(1)}M à ${(_salePriceRange.end / 1000000).toStringAsFixed(1)}M FCFA",
+                              "Budget achat : ${(_salePriceRange.start / 1000000).toStringAsFixed(1)}M à ${(_salePriceRange.end / 1000000).toStringAsFixed(1)}M FCFA",
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -363,7 +233,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             const SizedBox(height: 25),
                           ],
 
-                          // 3. MARQUE (Scrolling horizontal)
+                          // 3. MARQUE
                           const Text(
                             "Marque",
                             style: TextStyle(
@@ -461,7 +331,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                           const SizedBox(height: 25),
 
-                          // 5. AUTRES (Places & Clim)
+                          // 5. AUTRES
                           const Text(
                             "Autres critères",
                             style: TextStyle(
@@ -509,7 +379,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       height: 55,
                       child: ElevatedButton(
                         onPressed: () {
-                          setState(() {}); // Met à jour la liste des résultats
+                          _triggerFilter(); // Déclenche le filtrage
                           Navigator.pop(context); // Ferme la modal
                         },
                         style: ElevatedButton.styleFrom(
@@ -519,7 +389,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                         ),
                         child: const Text(
-                          "Voir les résultats",
+                          "Appliquer les filtres",
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -570,9 +440,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
-
-    // On applique le filtre sur nos données statiques
-    final filteredList = _filterVehicles(_staticVehicles);
+    final searchProvider = context.watch<SearchProvider>();
 
     return Scaffold(
       backgroundColor: kBackgroundColor,
@@ -619,13 +487,6 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
                 child: Row(
                   children: [
-                    // IconButton(
-                    //   icon: const Icon(
-                    //     Icons.arrow_back_ios_new,
-                    //     color: Colors.white,
-                    //   ),
-                    //   onPressed: () => context.pop(),
-                    // ),
                     Expanded(
                       child: Container(
                         height: 50,
@@ -635,8 +496,10 @@ class _SearchScreenState extends State<SearchScreen> {
                         ),
                         child: TextField(
                           controller: _searchController,
-                          onChanged: (val) =>
-                              setState(() => _searchQuery = val),
+                          onChanged: (val) {
+                            _searchQuery = val;
+                            _triggerFilter(); // Recherche temps réel !
+                          },
                           decoration: InputDecoration(
                             hintText: "Toyota, Mercedes...",
                             hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -670,39 +533,50 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ),
 
-              // --- COMPTEUR DE RÉSULTATS ---
-              Padding(
-                padding: const EdgeInsets.only(top: 15, left: 20, right: 20),
-                child: Row(
-                  children: [
-                    Text(
-                      "${filteredList.length} résultat(s) trouvé(s)",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // --- LISTE DES RÉSULTATS ---
-              Expanded(
-                child: filteredList.isEmpty
-                    ? _buildEmptyMessage()
-                    : ListView.builder(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.only(
-                          top: 10,
-                          bottom: 40,
-                          left: 20,
-                          right: 20,
+              // --- ÉTATS DE CHARGEMENT / COMPTEUR ---
+              if (searchProvider.isLoading)
+                const Padding(
+                  padding: EdgeInsets.only(top: 40),
+                  child: Center(
+                    child: CircularProgressIndicator(color: kPrimaryColor),
+                  ),
+                )
+              else ...[
+                Padding(
+                  padding: const EdgeInsets.only(top: 15, left: 20, right: 20),
+                  child: Row(
+                    children: [
+                      Text(
+                        "${searchProvider.filteredVehicles.length} résultat(s) trouvé(s) (Max. 30)",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
                         ),
-                        itemCount: filteredList.length,
-                        itemBuilder: (context, index) =>
-                            _buildSearchResultCard(filteredList[index]),
                       ),
-              ),
+                    ],
+                  ),
+                ),
+
+                // --- LISTE DES RÉSULTATS ---
+                Expanded(
+                  child: searchProvider.filteredVehicles.isEmpty
+                      ? _buildEmptyMessage()
+                      : ListView.builder(
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.only(
+                            top: 10,
+                            bottom: 40,
+                            left: 20,
+                            right: 20,
+                          ),
+                          itemCount: searchProvider.filteredVehicles.length,
+                          itemBuilder: (context, index) =>
+                              _buildSearchResultCard(
+                                searchProvider.filteredVehicles[index],
+                              ),
+                        ),
+                ),
+              ],
             ],
           ),
         ],
@@ -710,8 +584,9 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // --- NOUVELLE CARTE DE RÉSULTAT (Style épuré avec la vraie Image) ---
+  // --- CARTE DE RÉSULTAT ---
   Widget _buildSearchResultCard(VehicleModel vehicle) {
+    // Logique adaptative : si on est sur "Tout", on priorise l'affichage Location s'il est dispo, sinon Vente.
     bool isRentContext =
         _transactionType == 'rent' ||
         (_transactionType == 'all' && vehicle.isForRent);
@@ -726,7 +601,6 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
-        // padding: const EdgeInsets.all(12),
         height: 110,
         decoration: BoxDecoration(
           color: Colors.white,
@@ -741,7 +615,7 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
         child: Row(
           children: [
-            // IMAGE (Remplaçant l'icône, beau format carré/arrondi)
+            // IMAGE
             Container(
               width: 110,
               height: double.infinity,
@@ -750,28 +624,35 @@ class _SearchScreenState extends State<SearchScreen> {
                 borderRadius: BorderRadius.circular(15),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(15),
-                  bottomLeft: Radius.circular(15),
+                borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(15),
                 ),
-                // Ici on utilise .asset car ce sont nos données statiques
-                child: Image.asset(
-                  vehicle.images.isNotEmpty
-                      ? vehicle.images.first
-                      : 'assets/images/placeholder.jpg',
-                  fit: BoxFit.cover,
-                  errorBuilder: (c, e, s) => const Icon(
-                    Icons.directions_car,
-                    size: 30,
-                    color: kPrimaryColor,
-                  ),
-                ),
+                child:
+                    vehicle.images.isNotEmpty &&
+                        vehicle.images.first.startsWith('http')
+                    ? Image.network(
+                        vehicle.images.first,
+                        fit: BoxFit.cover,
+                        errorBuilder: (c, e, s) => const Icon(
+                          Icons.directions_car,
+                          size: 30,
+                          color: kPrimaryColor,
+                        ),
+                      )
+                    : Image.asset(
+                        'assets/images/placeholder.png', // Image de secours
+                        fit: BoxFit.cover,
+                        errorBuilder: (c, e, s) => const Icon(
+                          Icons.directions_car,
+                          size: 30,
+                          color: kPrimaryColor,
+                        ),
+                      ),
               ),
             ),
-
             const SizedBox(width: 15),
 
-            // INFOS (Style épuré)
+            // INFOS
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -789,7 +670,6 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                   const SizedBox(height: 5),
 
-                  // Caractéristiques (Boîte et Carburant)
                   Row(
                     children: [
                       const Icon(Icons.settings, size: 12, color: Colors.grey),
@@ -862,17 +742,8 @@ class _SearchScreenState extends State<SearchScreen> {
             TextButton.icon(
               onPressed: () {
                 _searchController.clear();
-                setState(() {
-                  _searchQuery = "";
-                  _transactionType = "all";
-                  _selectedBrand = "Toutes";
-                  _selectedGearbox = "Toutes";
-                  _selectedFuel = "Tous";
-                  _minSeats = 2;
-                  _requireAC = false;
-                  _rentPriceRange = const RangeValues(10000, 200000);
-                  _salePriceRange = const RangeValues(1000000, 50000000);
-                });
+                // On simule une modale (null) juste pour utiliser le setState interne à notre widget
+                _resetFilters((fn) => setState(fn));
               },
               icon: const Icon(Icons.refresh, color: kPrimaryColor),
               label: const Text(
