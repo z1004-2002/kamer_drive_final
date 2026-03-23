@@ -75,10 +75,9 @@ class AuthProvider with ChangeNotifier {
         'proofOfAddress': [], // Optionnel
         'reviews': [],
         'createdAt': FieldValue.serverTimestamp(),
-        'isFirstConnection':
-            true, // Indique que l'utilisateur vient de s'inscrire
-        'hasCompletedProfiling':
-            false, // Vaudra "true" après l'écran des intentions
+        'isFirstConnection': true, // Indique
+        'hasCompletedProfiling': false,
+        'accountStatus': "Actif",
         'intents': [], // Liste vide par défaut
         'ownsVehicle': false, // False par défaut
       });
@@ -96,7 +95,6 @@ class AuthProvider with ChangeNotifier {
   }
 
   // --- CONNEXION ---
-  // Renvoie "true" si l'utilisateur doit faire son profilage, "false" s'il va à l'accueil
   Future<bool> login(LoginModel data, BuildContext context) async {
     try {
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
@@ -104,17 +102,33 @@ class AuthProvider with ChangeNotifier {
         password: data.password,
       );
 
-      // On charge les données dans la variable globale (Auth)
+      // On charge les données depuis Firestore
       DocumentSnapshot doc = await _firestore
           .collection('users')
           .doc(userCredential.user!.uid)
           .get();
 
       if (doc.exists) {
-        _currentUser = UserModel.fromJson(doc.data() as Map<String, dynamic>);
+        Map<String, dynamic> userData = doc.data() as Map<String, dynamic>;
+
+        // --- NOUVEAU : VÉRIFICATION DU STATUT DU COMPTE ---
+        // On récupère le statut (par défaut "Actif" si le champ n'existe pas encore)
+        String accountStatus = userData['accountStatus'] ?? 'Actif';
+
+        if (accountStatus != 'Actif') {
+          // Si inactif, on détruit la session Firebase immédiatement
+          await _auth.signOut();
+          // On déclenche l'erreur personnalisée avec le numéro de téléphone
+          throw Exception(
+            "Votre compte est inactif ou suspendu. Veuillez contacter notre service client au +237 6XX XX XX XX.",
+          );
+        }
+        // ----------------------------------------------------
+
+        _currentUser = UserModel.fromJson(userData);
         notifyListeners();
 
-        // NOUVEAU : On force le ProfileProvider à se mettre à jour avec les nouvelles données !
+        // On force le ProfileProvider à se mettre à jour
         if (context.mounted) {
           Provider.of<ProfileProvider>(
             context,
@@ -134,6 +148,10 @@ class AuthProvider with ChangeNotifier {
         throw Exception(e.message ?? 'Erreur de connexion.');
       }
     } catch (e) {
+      // NOUVEAU : On s'assure de bien renvoyer notre message personnalisé si c'est l'erreur du compte inactif
+      if (e.toString().contains('inactif')) {
+        rethrow; // Relance l'exception personnalisée du compte inactif
+      }
       throw Exception('Une erreur inattendue est survenue.');
     }
   }
