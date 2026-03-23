@@ -31,6 +31,7 @@ flutter:
   assets:
     - assets/images/logo/logo.png
     - assets/images/logo/icon.png
+    - assets/images/logo/icon2.png
     - assets/images/onboard/rental.png
     - assets/images/onboard/sale.png
     - assets/images/onboard/carpool.png
@@ -44,9 +45,9 @@ flutter_launcher_icons:
 
 flutter_native_splash:
   color: "#FFFFFF" 
-  image: "assets/images/logo/logo.png"
+  image: "assets/images/logo/icon2.png"
   android: false
   ios: false
   android_12:
-    image: "assets/images/logo/logo.png"
+    image: "assets/images/logo/icon2.png"
     color: "#FFFFFF" 

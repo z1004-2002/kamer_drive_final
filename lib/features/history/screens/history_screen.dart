@@ -4,7 +4,6 @@ import 'package:kamer_drive_final/shared/widgets/booking_details_modal.dart';
 import 'package:provider/provider.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
 import 'package:kamer_drive_final/core/utils/snackbar_utils.dart';
-// NOUVEAUX IMPORTS
 import '../providers/history_provider.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -28,24 +27,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context
-          .read<HistoryProvider>()
-          .fetchUserHistory(); // Remplacé par HistoryProvider
+      context.read<HistoryProvider>().fetchUserHistory();
     });
   }
 
+  // --- FILTRES MIS À JOUR AVEC LES NOUVEAUX STATUTS ---
   bool _matchesFilter(String rawStatus) {
     if (_selectedFilter == 'Toutes') return true;
     if (_selectedFilter == 'Terminées') return rawStatus == 'Terminé';
-    if (_selectedFilter == 'Annulées')
+    if (_selectedFilter == 'Annulées') {
       return rawStatus == 'Annulé' || rawStatus == 'Rejeté';
+    }
     if (_selectedFilter == 'En cours/Attente') {
       return [
         'En attente',
         'Confirmé',
-        'En cours',
         'Négociation',
+        'Offre Acceptée',
         'Fonds Validés',
+        'En cours',
+        'Véhicule Rendu',
       ].contains(rawStatus);
     }
     return false;
@@ -58,22 +59,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
     String successMessage,
   ) async {
     try {
-      String collection = item.type == "Location"
-          ? 'rental_bookings'
-          : 'sale_bookings';
-
+      // Le code est beaucoup plus propre ici maintenant !
       await context.read<HistoryProvider>().updateBookingStatus(
-        collectionName: collection,
-        bookingId: item.bookingId,
+        item: item,
         newStatus: newStatus,
-        vehicleId: item.vehicleId,
         makeVehicleAvailable: makeAvailable,
       );
 
       if (mounted) SnackbarUtils.showSuccess(context, successMessage);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         SnackbarUtils.showError(context, "Erreur lors de l'opération.");
+      }
     }
   }
 
@@ -125,8 +122,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
-    final historyProvider = context
-        .watch<HistoryProvider>(); // Remplacé par HistoryProvider
+    final historyProvider = context.watch<HistoryProvider>();
 
     List<UnifiedHistoryItem> sourceList = _isOwnerMode
         ? historyProvider.ownerHistory
@@ -151,10 +147,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
             ),
           ),
-
           Column(
             children: [
-              // --- HEADER INCHANGÉ ---
+              // --- HEADER ---
               Container(
                 padding: EdgeInsets.only(
                   top: MediaQuery.of(context).padding.top,
@@ -263,7 +258,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               ),
 
-              // --- BARRE DE FILTRES INCHANGÉE ---
+              // --- BARRE DE FILTRES ---
               Container(
                 height: 45,
                 margin: const EdgeInsets.only(top: 15),
@@ -345,17 +340,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  // --- DESIGN DE LA CARTE ---
   Widget _buildHistoryCard(UnifiedHistoryItem item) {
     Color typeColor = item.type == 'Location'
         ? kPrimaryColor
         : Colors.orange.shade700;
-    Color statusColor = Colors.orange.shade700;
+    Color statusColor =
+        Colors.orange.shade700; // Couleur par défaut pour l'attente
 
+    // Couleurs adaptées au nouveau flux
     if ([
-      'En cours',
-      'Négociation',
-      'Fonds Validés',
       'Confirmé',
+      'Offre Acceptée',
+      'Fonds Validés',
+      'En cours',
+      'Véhicule Rendu',
     ].contains(item.status)) {
       statusColor = Colors.blue.shade700;
     } else if (item.status == 'Terminé') {
@@ -379,7 +378,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
       child: Column(
         children: [
-          // NOUVEAU : Enveloppe le haut de la carte dans un GestureDetector pour ouvrir la modale !
           GestureDetector(
             onTap: () => showBookingDetailsModal(context, item),
             behavior: HitTestBehavior.opaque,
@@ -488,161 +486,266 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  // --- LOGIQUE METIER : MACHINE À ÉTATS ---
   Widget _buildActionButtons(UnifiedHistoryItem item) {
     List<Widget> buttons = [];
-    bool isMyListing = item.isMyListing;
+    bool isOwner = item.isMyListing;
 
-    if (!isMyListing) {
-      if (item.type == 'Location' && item.status == 'En attente') {
-        buttons.add(
-          _actionBtn(
-            "Annuler la demande",
-            Colors.red,
-            outlined: true,
-            () => _showConfirmationDialog(
-              title: "Annuler la demande",
-              message:
-                  "Êtes-vous sûr de vouloir annuler votre demande de location ?",
-              isDestructive: true,
-              onConfirm: () => _handleBookingAction(
-                item,
-                "Annulé",
-                true,
-                "Réservation annulée.",
+    // ==========================================
+    // 1. FLUX LOCATION
+    // ==========================================
+    if (item.type == 'Location') {
+      if (!isOwner) {
+        // --- VUE CLIENT (Location) ---
+        if (item.status == 'En attente') {
+          buttons.add(
+            _actionBtn(
+              "Annuler la demande",
+              Colors.red,
+              true,
+              () => _showConfirmationDialog(
+                title: "Annuler",
+                message: "Voulez-vous annuler votre demande de réservation ?",
+                isDestructive: true,
+                onConfirm: () => _handleBookingAction(
+                  item,
+                  "Annulé",
+                  true,
+                  "Demande annulée.",
+                ),
               ),
             ),
-          ),
-        );
-      } else if (item.type == 'Location' && item.status == 'En cours') {
-        buttons.add(
-          _actionBtn(
-            "Terminer la location",
-            Colors.red,
-            outlined: true,
-            () => _showConfirmationDialog(
-              title: "Terminer la location",
-              message:
-                  "Confirmez-vous que vous avez restitué le véhicule au propriétaire ?",
-              isDestructive: true,
-              onConfirm: () => _handleBookingAction(
-                item,
-                "Terminé",
-                true,
-                "Location terminée !",
+          );
+        } else if (item.status == 'Fonds Validés') {
+          // Étape 4: Client récupère le véhicule
+          buttons.add(
+            _actionBtn(
+              "J'ai récupéré le véhicule",
+              kPrimaryColor,
+              false,
+              () => _showConfirmationDialog(
+                title: "Véhicule récupéré",
+                message:
+                    "Confirmez-vous que le propriétaire vous a remis les clés et le véhicule ?",
+                onConfirm: () => _handleBookingAction(
+                  item,
+                  "En cours",
+                  false,
+                  "Bonne route !",
+                ),
               ),
             ),
-          ),
-        );
-      } else if (item.type == 'Vente' && item.status == 'Négociation') {
-        buttons.add(
-          _actionBtn(
-            "Annuler l'offre",
-            Colors.red,
-            outlined: true,
-            () => _showConfirmationDialog(
-              title: "Annuler l'offre",
-              message: "Voulez-vous vraiment retirer votre offre d'achat ?",
-              isDestructive: true,
-              onConfirm: () =>
-                  _handleBookingAction(item, "Annulé", true, "Offre annulée."),
+          );
+        } else if (item.status == 'Véhicule Rendu') {
+          // Étape 6 (Finale): Client confirme avoir reçu la caution
+          buttons.add(
+            _actionBtn(
+              "Caution récupérée",
+              Colors.green,
+              false,
+              () => _showConfirmationDialog(
+                title: "Caution récupérée",
+                message:
+                    "Confirmez-vous avoir récupéré votre caution ? Cela clôturera le dossier.",
+                onConfirm: () => _handleBookingAction(
+                  item,
+                  "Terminé",
+                  true,
+                  "Location terminée avec succès !",
+                ),
+              ),
             ),
-          ),
-        );
+          );
+        }
+      } else {
+        // --- VUE PROPRIÉTAIRE (Location) ---
+        if (item.status == 'En attente') {
+          // Étape 2: Proprio accepte ou refuse
+          buttons.add(
+            _actionBtn(
+              "Refuser",
+              Colors.red,
+              true,
+              () => _showConfirmationDialog(
+                title: "Refuser",
+                message: "Voulez-vous rejeter cette demande ?",
+                isDestructive: true,
+                onConfirm: () => _handleBookingAction(
+                  item,
+                  "Rejeté",
+                  true,
+                  "Demande refusée.",
+                ),
+              ),
+            ),
+          );
+          buttons.add(const SizedBox(width: 10));
+          buttons.add(
+            _actionBtn(
+              "Accepter",
+              kPrimaryColor,
+              false,
+              () => _showConfirmationDialog(
+                title: "Accepter",
+                message: "Voulez-vous accepter cette location ?",
+                onConfirm: () => _handleBookingAction(
+                  item,
+                  "Confirmé",
+                  false,
+                  "Location acceptée !",
+                ),
+              ),
+            ),
+          );
+        } else if (item.status == 'Confirmé') {
+          // Étape 3: Proprio reçoit l'argent
+          buttons.add(
+            _actionBtn(
+              "Paiement & Caution reçus",
+              Colors.blue,
+              false,
+              () => _showConfirmationDialog(
+                title: "Paiement reçu",
+                message:
+                    "Confirmez-vous avoir reçu l'argent et la caution du client ?",
+                onConfirm: () => _handleBookingAction(
+                  item,
+                  "Fonds Validés",
+                  false,
+                  "Fonds validés ! Au client de confirmer la remise des clés.",
+                ),
+              ),
+            ),
+          );
+        } else if (item.status == 'En cours') {
+          // Étape 5: Proprio confirme le retour du véhicule
+          buttons.add(
+            _actionBtn(
+              "Véhicule restitué",
+              Colors.orange.shade700,
+              false,
+              () => _showConfirmationDialog(
+                title: "Retour du véhicule",
+                message:
+                    "Le client vous a-t-il bien ramené le véhicule ? (N'oubliez pas de lui rendre sa caution)",
+                onConfirm: () => _handleBookingAction(
+                  item,
+                  "Véhicule Rendu",
+                  false,
+                  "Véhicule rendu, en attente de la confirmation du client.",
+                ),
+              ),
+            ),
+          );
+        }
       }
-    } else {
-      if (item.type == 'Location' && item.status == 'En attente') {
-        buttons.add(
-          _actionBtn(
-            "Refuser",
-            Colors.red,
-            outlined: true,
-            () => _showConfirmationDialog(
-              title: "Refuser la demande",
-              message:
-                  "Voulez-vous vraiment refuser cette demande de location ?",
-              isDestructive: true,
-              onConfirm: () => _handleBookingAction(
-                item,
-                "Rejeté",
-                true,
-                "Demande refusée.",
+    }
+    // ==========================================
+    // 2. FLUX VENTE
+    // ==========================================
+    else if (item.type == 'Vente') {
+      if (!isOwner) {
+        // --- VUE ACHETEUR (Vente) ---
+        if (item.status == 'Négociation') {
+          buttons.add(
+            _actionBtn(
+              "Annuler l'offre",
+              Colors.red,
+              true,
+              () => _showConfirmationDialog(
+                title: "Annuler l'offre",
+                message: "Voulez-vous annuler votre offre d'achat ?",
+                isDestructive: true,
+                onConfirm: () => _handleBookingAction(
+                  item,
+                  "Annulé",
+                  true,
+                  "Offre annulée.",
+                ),
               ),
             ),
-          ),
-        );
-        buttons.add(const SizedBox(width: 10));
-        buttons.add(
-          _actionBtn(
-            "Accepter",
-            kPrimaryColor,
-            outlined: false,
-            () => _showConfirmationDialog(
-              title: "Accepter la location",
-              message:
-                  "Voulez-vous valider cette location et bloquer les dates pour ce client ?",
-              onConfirm: () => _handleBookingAction(
-                item,
-                "En cours",
-                false,
-                "Demande acceptée !",
+          );
+        } else if (item.status == 'Fonds Validés') {
+          // Étape finale : L'acheteur confirme qu'il a eu la voiture
+          buttons.add(
+            _actionBtn(
+              "Véhicule réceptionné",
+              Colors.green,
+              false,
+              () => _showConfirmationDialog(
+                title: "Confirmation d'achat",
+                message:
+                    "Confirmez-vous avoir reçu le véhicule et les documents ? Cela clôturera la transaction.",
+                onConfirm: () => _handleBookingAction(
+                  item,
+                  "Terminé",
+                  false,
+                  "Félicitations pour votre achat !",
+                ),
               ),
             ),
-          ),
-        );
-      } else if (item.type == 'Vente' && item.status == 'Négociation') {
-        buttons.add(
-          _actionBtn(
-            "Refuser",
-            Colors.red,
-            outlined: true,
-            () => _showConfirmationDialog(
-              title: "Refuser l'offre",
-              message:
-                  "Voulez-vous vraiment rejeter cette proposition d'achat ?",
-              isDestructive: true,
-              onConfirm: () =>
-                  _handleBookingAction(item, "Rejeté", true, "Offre refusée."),
-            ),
-          ),
-        );
-        buttons.add(const SizedBox(width: 10));
-        buttons.add(
-          _actionBtn(
-            "Accepter l'offre",
-            kPrimaryColor,
-            outlined: false,
-            () => _showConfirmationDialog(
-              title: "Accepter l'offre",
-              message:
-                  "En acceptant cette offre, vous vous engagez à vendre le véhicule à ce client.",
-              onConfirm: () => _handleBookingAction(
-                item,
-                "Fonds Validés",
-                false,
-                "Offre acceptée !",
+          );
+        }
+      } else {
+        // --- VUE VENDEUR (Vente) ---
+        if (item.status == 'Négociation') {
+          // Étape 2: Vendeur accepte l'offre
+          buttons.add(
+            _actionBtn(
+              "Refuser",
+              Colors.red,
+              true,
+              () => _showConfirmationDialog(
+                title: "Refuser",
+                message: "Voulez-vous rejeter cette offre ?",
+                isDestructive: true,
+                onConfirm: () => _handleBookingAction(
+                  item,
+                  "Rejeté",
+                  true,
+                  "Offre refusée.",
+                ),
               ),
             ),
-          ),
-        );
-      } else if (item.type == 'Vente' && item.status == 'Fonds Validés') {
-        buttons.add(
-          _actionBtn(
-            "Confirmer livraison",
-            Colors.green,
-            outlined: false,
-            () => _showConfirmationDialog(
-              title: "Confirmer la livraison",
-              message:
-                  "Confirmez-vous avoir livré le véhicule à l'acheteur ? Cette action clôturera la vente définitivement.",
-              onConfirm: () => _handleBookingAction(
-                item,
-                "Terminé",
-                false,
-                "Vente clôturée.",
+          );
+          buttons.add(const SizedBox(width: 10));
+          buttons.add(
+            _actionBtn(
+              "Accepter l'offre",
+              kPrimaryColor,
+              false,
+              () => _showConfirmationDialog(
+                title: "Accepter",
+                message: "Accepter cette offre d'achat ?",
+                onConfirm: () => _handleBookingAction(
+                  item,
+                  "Offre Acceptée",
+                  false,
+                  "Offre acceptée, en attente du paiement.",
+                ),
               ),
             ),
-          ),
-        );
+          );
+        } else if (item.status == 'Offre Acceptée') {
+          // Étape 3: Vendeur confirme l'argent
+          buttons.add(
+            _actionBtn(
+              "Fonds reçus",
+              Colors.blue,
+              false,
+              () => _showConfirmationDialog(
+                title: "Fonds reçus",
+                message: "Confirmez-vous avoir reçu la totalité du paiement ?",
+                onConfirm: () => _handleBookingAction(
+                  item,
+                  "Fonds Validés",
+                  false,
+                  "Paiement validé. À l'acheteur de confirmer la réception.",
+                ),
+              ),
+            ),
+          );
+        }
       }
     }
 
@@ -666,10 +769,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget _actionBtn(
     String label,
     Color color,
-    VoidCallback onTap, {
-    required bool outlined,
-  }) {
-    if (outlined) {
+    bool isOutlined,
+    VoidCallback onTap,
+  ) {
+    if (isOutlined) {
       return OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
@@ -681,10 +784,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
         child: Text(
           label,
+          textAlign: TextAlign.center,
           style: TextStyle(
             color: color,
             fontWeight: FontWeight.bold,
-            fontSize: 13,
+            fontSize: 12,
           ),
         ),
       );
@@ -701,10 +805,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
         child: Text(
           label,
+          textAlign: TextAlign.center,
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
-            fontSize: 13,
+            fontSize: 12,
           ),
         ),
       );

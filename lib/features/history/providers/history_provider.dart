@@ -132,24 +132,60 @@ class HistoryProvider with ChangeNotifier {
   }
 
   Future<void> updateBookingStatus({
-    required String collectionName,
-    required String bookingId,
+    required UnifiedHistoryItem item, // On passe l'objet complet
     required String newStatus,
-    required String vehicleId,
     required bool makeVehicleAvailable,
   }) async {
     try {
-      await _firestore.collection(collectionName).doc(bookingId).update({
-        'status': newStatus,
-      });
+      String collectionName = item.type == "Location"
+          ? 'rental_bookings'
+          : 'sale_bookings';
 
+      // 1. Préparer les champs à mettre à jour dans le dossier
+      Map<String, dynamic> updates = {'status': newStatus};
+
+      if (item.type == 'Location') {
+        if (newStatus == 'Confirmé') updates['checkInValidated'] = true;
+        if (newStatus == 'Fonds Validés') updates['fundsReceived'] = true;
+        if (newStatus == 'Véhicule Rendu') updates['checkOutValidated'] = true;
+        if (newStatus == 'Terminé') updates['depositRefunded'] = true;
+      } else {
+        // Vente
+        if (newStatus == 'Fonds Validés') updates['fundsReceived'] = true;
+        if (newStatus == 'Terminé') {
+          updates['vehicleReceived'] = true;
+          updates['ownershipTransferred'] = true;
+        }
+      }
+
+      // 2. Mettre à jour le dossier de transaction
+      await _firestore
+          .collection(collectionName)
+          .doc(item.bookingId)
+          .update(updates);
+
+      // 3. Libérer le véhicule (Si location annulée ou terminée)
       if (makeVehicleAvailable) {
-        await _firestore.collection('vehicles').doc(vehicleId).update({
+        await _firestore.collection('vehicles').doc(item.vehicleId).update({
           'isAvailable': true,
         });
       }
 
-      await fetchUserHistory(); // Rafraîchit la liste
+      // 4. MAGIE : TRANSFERT DE PROPRIÉTÉ SI VENTE TERMINÉE !
+      if (item.type == 'Vente' && newStatus == 'Terminé') {
+        await _firestore.collection('vehicles').doc(item.vehicleId).update({
+          'ownerId': item.clientId, // L'acheteur devient le nouveau Boss !
+          'isForSale': false, // N'est plus à vendre
+          'isForRent': false, // On bloque la loc par précaution
+          'isAvailable':
+              false, // En attente que le nouveau proprio le configure
+          'validationStatus':
+              'En attente', // L'admin devra valider sa nouvelle configuration
+        });
+      }
+
+      // 5. Rafraîchir l'historique localement
+      await fetchUserHistory();
     } catch (e) {
       debugPrint("Erreur updateBookingStatus: $e");
       throw Exception("Erreur lors de la mise à jour.");
