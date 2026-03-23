@@ -14,26 +14,41 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  // --- ÉTATS DES FILTRES ---
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
 
-  String _transactionType = "all"; // 'all', 'rent', 'sale'
+  String _transactionType = "all";
   String _selectedBrand = "Toutes";
-  String _selectedGearbox = "Toutes"; // Contient bien 'Semi-automatique'
+  String _selectedCity = "Toutes"; // NOUVEAU
+  String _selectedGearbox = "Toutes";
   String _selectedFuel = "Tous";
   double _minSeats = 2;
   bool _requireAC = false;
 
-  RangeValues _rentPriceRange = const RangeValues(10000, 200000);
-  RangeValues _salePriceRange = const RangeValues(1000000, 50000000);
+  // We make these nullable initially. They will be set once data loads.
+  RangeValues? _rentPriceRange;
+  RangeValues? _salePriceRange;
 
   @override
   void initState() {
     super.initState();
-    // On charge les données depuis Firebase au démarrage
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<SearchProvider>().fetchAllVehicles();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await context.read<SearchProvider>().fetchAllVehicles();
+      _initializeRangesFromProvider();
+    });
+  }
+
+  void _initializeRangesFromProvider() {
+    final provider = context.read<SearchProvider>();
+    setState(() {
+      _rentPriceRange = RangeValues(
+        provider.minRentPrice,
+        provider.maxRentPrice,
+      );
+      _salePriceRange = RangeValues(
+        provider.minSalePrice,
+        provider.maxSalePrice,
+      );
     });
   }
 
@@ -43,47 +58,57 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  // --- LOGIQUE POUR DÉCLENCHER LE FILTRE ---
   void _triggerFilter() {
+    if (_rentPriceRange == null || _salePriceRange == null) return;
+
     context.read<SearchProvider>().applyFilters(
       searchQuery: _searchQuery,
       transactionType: _transactionType,
       brand: _selectedBrand,
+      city: _selectedCity, // NOUVEAU
       gearbox: _selectedGearbox,
       fuelType: _selectedFuel,
       minSeats: _minSeats,
       requireAC: _requireAC,
-      rentPriceRange: _rentPriceRange,
-      salePriceRange: _salePriceRange,
+      rentPriceRange: _rentPriceRange!,
+      salePriceRange: _salePriceRange!,
     );
   }
 
-  // --- LOGIQUE DE RÉINITIALISATION ---
   void _resetFilters(StateSetter setModalState) {
+    final provider = context.read<SearchProvider>();
     setModalState(() {
       _transactionType = "all";
       _selectedBrand = "Toutes";
+      _selectedCity = "Toutes";
       _selectedGearbox = "Toutes";
       _selectedFuel = "Tous";
       _minSeats = 2;
       _requireAC = false;
-      _rentPriceRange = const RangeValues(10000, 200000);
-      _salePriceRange = const RangeValues(1000000, 50000000);
+      _rentPriceRange = RangeValues(
+        provider.minRentPrice,
+        provider.maxRentPrice,
+      );
+      _salePriceRange = RangeValues(
+        provider.minSalePrice,
+        provider.maxSalePrice,
+      );
     });
     _triggerFilter();
   }
 
-  // --- MODAL DES FILTRES ---
   void _showFilterModal() {
-    List<String> brands = [
-      "Toutes",
-      "Toyota",
-      "Mercedes",
-      "Suzuki",
-      "Hyundai",
-      "Kia",
-      "Lexus",
-    ];
+    final provider = context.read<SearchProvider>();
+
+    // Safety check just in case ranges aren't set yet
+    _rentPriceRange ??= RangeValues(
+      provider.minRentPrice,
+      provider.maxRentPrice,
+    );
+    _salePriceRange ??= RangeValues(
+      provider.minSalePrice,
+      provider.maxSalePrice,
+    );
 
     showModalBottomSheet(
       context: context,
@@ -114,7 +139,6 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // HEADER FILTRES + BOUTON RÉINITIALISER
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -190,21 +214,24 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                           const SizedBox(height: 25),
 
-                          // 2. PRIX (Adaptatif)
+                          // 2. DYNAMIC PRICES
                           if (_transactionType == 'rent' ||
                               _transactionType == 'all') ...[
                             Text(
-                              "Prix location : ${_rentPriceRange.start.toInt()} à ${_rentPriceRange.end.toInt()} FCFA/j",
+                              "Prix location : ${_rentPriceRange!.start.toInt()} à ${_rentPriceRange!.end.toInt()} FCFA/j",
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
                             ),
                             RangeSlider(
-                              values: _rentPriceRange,
-                              min: 5000,
-                              max: 200000,
-                              divisions: 39,
+                              values: _rentPriceRange!,
+                              min: provider.minRentPrice,
+                              max: provider.maxRentPrice,
+                              divisions:
+                                  provider.maxRentPrice > provider.minRentPrice
+                                  ? 50
+                                  : 1, // Avoid crash if max == min
                               activeColor: kPrimaryColor,
                               onChanged: (values) =>
                                   setModalState(() => _rentPriceRange = values),
@@ -215,17 +242,20 @@ class _SearchScreenState extends State<SearchScreen> {
                           if (_transactionType == 'sale' ||
                               _transactionType == 'all') ...[
                             Text(
-                              "Budget achat : ${(_salePriceRange.start / 1000000).toStringAsFixed(1)}M à ${(_salePriceRange.end / 1000000).toStringAsFixed(1)}M FCFA",
+                              "Budget achat : ${(_salePriceRange!.start / 1000000).toStringAsFixed(1)}M à ${(_salePriceRange!.end / 1000000).toStringAsFixed(1)}M FCFA",
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
                             ),
                             RangeSlider(
-                              values: _salePriceRange,
-                              min: 500000,
-                              max: 50000000,
-                              divisions: 99,
+                              values: _salePriceRange!,
+                              min: provider.minSalePrice,
+                              max: provider.maxSalePrice,
+                              divisions:
+                                  provider.maxSalePrice > provider.minSalePrice
+                                  ? 50
+                                  : 1,
                               activeColor: Colors.orange,
                               onChanged: (values) =>
                                   setModalState(() => _salePriceRange = values),
@@ -233,7 +263,39 @@ class _SearchScreenState extends State<SearchScreen> {
                             const SizedBox(height: 25),
                           ],
 
-                          // 3. MARQUE
+                          // 3. DYNAMIC CITIES (NOUVEAU)
+                          const Text(
+                            "Ville",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            child: Row(
+                              children: provider.availableCities
+                                  .map(
+                                    (city) => Padding(
+                                      padding: const EdgeInsets.only(right: 10),
+                                      child: _buildFilterChip(
+                                        city,
+                                        city,
+                                        _selectedCity,
+                                        (v) => setModalState(
+                                          () => _selectedCity = v,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ),
+                          const SizedBox(height: 25),
+
+                          // 4. DYNAMIC BRANDS
                           const Text(
                             "Marque",
                             style: TextStyle(
@@ -246,7 +308,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             scrollDirection: Axis.horizontal,
                             physics: const BouncingScrollPhysics(),
                             child: Row(
-                              children: brands
+                              children: provider.availableBrands
                                   .map(
                                     (b) => Padding(
                                       padding: const EdgeInsets.only(right: 10),
@@ -265,7 +327,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                           const SizedBox(height: 25),
 
-                          // 4. BOÎTE & CARBURANT
+                          // 5. BOÎTE & CARBURANT
                           const Text(
                             "Boîte de vitesse",
                             style: TextStyle(
@@ -331,7 +393,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                           const SizedBox(height: 25),
 
-                          // 5. AUTRES
+                          // 6. AUTRES
                           const Text(
                             "Autres critères",
                             style: TextStyle(
@@ -379,8 +441,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       height: 55,
                       child: ElevatedButton(
                         onPressed: () {
-                          _triggerFilter(); // Déclenche le filtrage
-                          Navigator.pop(context); // Ferme la modal
+                          _triggerFilter();
+                          Navigator.pop(context);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: kPrimaryColor,
@@ -446,7 +508,6 @@ class _SearchScreenState extends State<SearchScreen> {
       backgroundColor: kBackgroundColor,
       body: Stack(
         children: [
-          // Background UI
           Positioned(
             left: -size.width * 0.3,
             bottom: size.height * 0.4,
@@ -498,10 +559,10 @@ class _SearchScreenState extends State<SearchScreen> {
                           controller: _searchController,
                           onChanged: (val) {
                             _searchQuery = val;
-                            _triggerFilter(); // Recherche temps réel !
+                            _triggerFilter();
                           },
                           decoration: InputDecoration(
-                            hintText: "Toyota, Mercedes...",
+                            hintText: "Rechercher...",
                             hintStyle: TextStyle(color: Colors.grey.shade400),
                             prefixIcon: const Icon(
                               Icons.search,
@@ -533,7 +594,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ),
 
-              // --- ÉTATS DE CHARGEMENT / COMPTEUR ---
+              // --- ÉTATS DE CHARGEMENT ---
               if (searchProvider.isLoading)
                 const Padding(
                   padding: EdgeInsets.only(top: 40),
@@ -557,7 +618,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                 ),
 
-                // --- LISTE DES RÉSULTATS ---
+                // --- LISTE ---
                 Expanded(
                   child: searchProvider.filteredVehicles.isEmpty
                       ? _buildEmptyMessage()
@@ -584,9 +645,8 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // --- CARTE DE RÉSULTAT (Mise à jour avec Badges) ---
+  // --- CARTE RÉSULTAT ---
   Widget _buildSearchResultCard(VehicleModel vehicle) {
-    // Logique adaptative : si on est sur "Tout", on priorise l'affichage Location s'il est dispo, sinon Vente.
     bool isRentContext =
         _transactionType == 'rent' ||
         (_transactionType == 'all' && vehicle.isForRent);
@@ -601,7 +661,7 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
-        height: 120, // Légèrement agrandi pour bien aérer le contenu
+        height: 120,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -615,13 +675,12 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
         child: Row(
           children: [
-            // --- IMAGE AVEC BADGES ---
+            // --- IMAGE ---
             SizedBox(
-              width: 120, // Largeur fixe pour l'image
+              width: 120,
               height: double.infinity,
               child: Stack(
                 children: [
-                  // L'image de fond
                   Container(
                     width: double.infinity,
                     height: double.infinity,
@@ -648,7 +707,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               ),
                             )
                           : Image.asset(
-                              'assets/images/placeholder.png', // Image de secours
+                              'assets/images/placeholder.png',
                               fit: BoxFit.cover,
                               errorBuilder: (c, e, s) => const Icon(
                                 Icons.directions_car,
@@ -659,14 +718,13 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                   ),
 
-                  // LES BADGES MULTIPLES (Positionnés en haut à gauche)
+                  // BADGES
                   Positioned(
                     top: 8,
                     left: 8,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Badge Location
                         if (vehicle.isForRent &&
                             (_transactionType == 'all' ||
                                 _transactionType == 'rent'))
@@ -689,7 +747,6 @@ class _SearchScreenState extends State<SearchScreen> {
                               ),
                             ),
                           ),
-                        // Badge Vente
                         if (vehicle.isForSale &&
                             (_transactionType == 'all' ||
                                 _transactionType == 'sale'))
@@ -717,10 +774,9 @@ class _SearchScreenState extends State<SearchScreen> {
                 ],
               ),
             ),
-
             const SizedBox(width: 15),
 
-            // --- INFOS DU VÉHICULE ---
+            // --- INFOS ---
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -737,7 +793,28 @@ class _SearchScreenState extends State<SearchScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 5),
-
+                  // LOCATION CITY
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        size: 12,
+                        color: Colors.grey,
+                      ),
+                      Expanded(
+                        child: Text(
+                          " ${vehicle.city}",
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
                   Row(
                     children: [
                       const Icon(Icons.settings, size: 12, color: Colors.grey),
@@ -764,7 +841,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // AFFICHAGE DU PRIX
+                  // PRIX
                   if (isRentContext && vehicle.rentPricePerDay != null)
                     Text(
                       "${vehicle.rentPricePerDay!.toInt()} FCFA /j",
@@ -810,7 +887,6 @@ class _SearchScreenState extends State<SearchScreen> {
             TextButton.icon(
               onPressed: () {
                 _searchController.clear();
-                // On simule une modale (null) juste pour utiliser le setState interne à notre widget
                 _resetFilters((fn) => setState(fn));
               },
               icon: const Icon(Icons.refresh, color: kPrimaryColor),
