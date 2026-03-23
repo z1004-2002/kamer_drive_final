@@ -26,18 +26,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void initState() {
     super.initState();
+    _loadData();
+  }
+
+  void _loadData() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<HistoryProvider>().fetchUserHistory();
     });
   }
 
-  // --- FILTRES MIS À JOUR AVEC LES NOUVEAUX STATUTS ---
   bool _matchesFilter(String rawStatus) {
     if (_selectedFilter == 'Toutes') return true;
     if (_selectedFilter == 'Terminées') return rawStatus == 'Terminé';
-    if (_selectedFilter == 'Annulées') {
+    if (_selectedFilter == 'Annulées')
       return rawStatus == 'Annulé' || rawStatus == 'Rejeté';
-    }
     if (_selectedFilter == 'En cours/Attente') {
       return [
         'En attente',
@@ -59,18 +61,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
     String successMessage,
   ) async {
     try {
-      // Le code est beaucoup plus propre ici maintenant !
       await context.read<HistoryProvider>().updateBookingStatus(
         item: item,
         newStatus: newStatus,
         makeVehicleAvailable: makeAvailable,
       );
-
       if (mounted) SnackbarUtils.showSuccess(context, successMessage);
     } catch (e) {
-      if (mounted) {
+      if (mounted)
         SnackbarUtils.showError(context, "Erreur lors de l'opération.");
-      }
     }
   }
 
@@ -124,6 +123,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     Size size = MediaQuery.of(context).size;
     final historyProvider = context.watch<HistoryProvider>();
 
+    // On sélectionne la bonne liste (Vérifie bien que tu es sur le bon onglet dans l'UI)
     List<UnifiedHistoryItem> sourceList = _isOwnerMode
         ? historyProvider.ownerHistory
         : historyProvider.clientHistory;
@@ -174,12 +174,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
                 child: Column(
                   children: [
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 30),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          SizedBox(height: 50),
-                          Text(
+                          const Text(
                             "Mon Historique",
                             style: TextStyle(
                               color: Colors.white,
@@ -187,10 +187,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                          // NOUVEAU BOUTON REFRESH
+                          IconButton(
+                            icon: const Icon(
+                              Icons.refresh,
+                              color: Colors.white,
+                            ),
+                            onPressed: _loadData,
+                          ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 15),
+                    const SizedBox(height: 5),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 20),
                       padding: const EdgeInsets.all(4),
@@ -340,15 +348,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  // --- DESIGN DE LA CARTE ---
   Widget _buildHistoryCard(UnifiedHistoryItem item) {
     Color typeColor = item.type == 'Location'
         ? kPrimaryColor
         : Colors.orange.shade700;
-    Color statusColor =
-        Colors.orange.shade700; // Couleur par défaut pour l'attente
+    Color statusColor = Colors.orange.shade700;
 
-    // Couleurs adaptées au nouveau flux
     if ([
       'Confirmé',
       'Offre Acceptée',
@@ -486,17 +491,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  // --- LOGIQUE METIER : MACHINE À ÉTATS ---
   Widget _buildActionButtons(UnifiedHistoryItem item) {
     List<Widget> buttons = [];
     bool isOwner = item.isMyListing;
 
-    // ==========================================
-    // 1. FLUX LOCATION
-    // ==========================================
     if (item.type == 'Location') {
       if (!isOwner) {
-        // --- VUE CLIENT (Location) ---
         if (item.status == 'En attente') {
           buttons.add(
             _actionBtn(
@@ -517,7 +517,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           );
         } else if (item.status == 'Fonds Validés') {
-          // Étape 4: Client récupère le véhicule
           buttons.add(
             _actionBtn(
               "J'ai récupéré le véhicule",
@@ -526,7 +525,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               () => _showConfirmationDialog(
                 title: "Véhicule récupéré",
                 message:
-                    "Confirmez-vous que le propriétaire vous a remis les clés et le véhicule ?",
+                    "Confirmez-vous que le propriétaire vous a remis les clés ?",
                 onConfirm: () => _handleBookingAction(
                   item,
                   "En cours",
@@ -537,7 +536,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           );
         } else if (item.status == 'Véhicule Rendu') {
-          // Étape 6 (Finale): Client confirme avoir reçu la caution
           buttons.add(
             _actionBtn(
               "Caution récupérée",
@@ -558,9 +556,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           );
         }
       } else {
-        // --- VUE PROPRIÉTAIRE (Location) ---
         if (item.status == 'En attente') {
-          // Étape 2: Proprio accepte ou refuse
           buttons.add(
             _actionBtn(
               "Refuser",
@@ -598,7 +594,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           );
         } else if (item.status == 'Confirmé') {
-          // Étape 3: Proprio reçoit l'argent
           buttons.add(
             _actionBtn(
               "Paiement & Caution reçus",
@@ -606,19 +601,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
               false,
               () => _showConfirmationDialog(
                 title: "Paiement reçu",
-                message:
-                    "Confirmez-vous avoir reçu l'argent et la caution du client ?",
+                message: "Confirmez-vous avoir reçu l'argent et la caution ?",
                 onConfirm: () => _handleBookingAction(
                   item,
                   "Fonds Validés",
                   false,
-                  "Fonds validés ! Au client de confirmer la remise des clés.",
+                  "Fonds validés !",
                 ),
               ),
             ),
           );
         } else if (item.status == 'En cours') {
-          // Étape 5: Proprio confirme le retour du véhicule
           buttons.add(
             _actionBtn(
               "Véhicule restitué",
@@ -626,26 +619,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
               false,
               () => _showConfirmationDialog(
                 title: "Retour du véhicule",
-                message:
-                    "Le client vous a-t-il bien ramené le véhicule ? (N'oubliez pas de lui rendre sa caution)",
+                message: "Le client vous a-t-il bien ramené le véhicule ?",
                 onConfirm: () => _handleBookingAction(
                   item,
                   "Véhicule Rendu",
                   false,
-                  "Véhicule rendu, en attente de la confirmation du client.",
+                  "Véhicule rendu.",
                 ),
               ),
             ),
           );
         }
       }
-    }
-    // ==========================================
-    // 2. FLUX VENTE
-    // ==========================================
-    else if (item.type == 'Vente') {
+    } else if (item.type == 'Vente') {
       if (!isOwner) {
-        // --- VUE ACHETEUR (Vente) ---
         if (item.status == 'Négociation') {
           buttons.add(
             _actionBtn(
@@ -666,7 +653,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           );
         } else if (item.status == 'Fonds Validés') {
-          // Étape finale : L'acheteur confirme qu'il a eu la voiture
           buttons.add(
             _actionBtn(
               "Véhicule réceptionné",
@@ -675,21 +661,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
               () => _showConfirmationDialog(
                 title: "Confirmation d'achat",
                 message:
-                    "Confirmez-vous avoir reçu le véhicule et les documents ? Cela clôturera la transaction.",
+                    "Confirmez-vous avoir reçu le véhicule ? Cela clôturera la transaction.",
                 onConfirm: () => _handleBookingAction(
                   item,
                   "Terminé",
                   false,
-                  "Félicitations pour votre achat !",
+                  "Félicitations !",
                 ),
               ),
             ),
           );
         }
       } else {
-        // --- VUE VENDEUR (Vente) ---
         if (item.status == 'Négociation') {
-          // Étape 2: Vendeur accepte l'offre
           buttons.add(
             _actionBtn(
               "Refuser",
@@ -721,13 +705,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   item,
                   "Offre Acceptée",
                   false,
-                  "Offre acceptée, en attente du paiement.",
+                  "Offre acceptée.",
                 ),
               ),
             ),
           );
         } else if (item.status == 'Offre Acceptée') {
-          // Étape 3: Vendeur confirme l'argent
           buttons.add(
             _actionBtn(
               "Fonds reçus",
@@ -735,12 +718,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
               false,
               () => _showConfirmationDialog(
                 title: "Fonds reçus",
-                message: "Confirmez-vous avoir reçu la totalité du paiement ?",
+                message: "Confirmez-vous avoir reçu le paiement ?",
                 onConfirm: () => _handleBookingAction(
                   item,
                   "Fonds Validés",
                   false,
-                  "Paiement validé. À l'acheteur de confirmer la réception.",
+                  "Paiement validé.",
                 ),
               ),
             ),
@@ -750,7 +733,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
 
     if (buttons.isEmpty) return const SizedBox.shrink();
-
     return Column(
       children: [
         Divider(height: 1, color: Colors.grey.shade200),

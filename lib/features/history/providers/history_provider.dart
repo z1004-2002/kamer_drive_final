@@ -17,6 +17,15 @@ class HistoryProvider with ChangeNotifier {
   bool _isLoadingHistory = false;
   bool get isLoadingHistory => _isLoadingHistory;
 
+  // --- LE PARSEUR UNIVERSEL (Gère les Timestamp Firebase ET les String) ---
+  DateTime _parseDate(dynamic dateData) {
+    if (dateData == null) return DateTime.now();
+    if (dateData is Timestamp) return dateData.toDate();
+    if (dateData is String)
+      return DateTime.tryParse(dateData) ?? DateTime.now();
+    return DateTime.now();
+  }
+
   Future<void> fetchUserHistory() async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;
@@ -58,25 +67,26 @@ class HistoryProvider with ChangeNotifier {
             .collection('vehicles')
             .doc(vehicleId)
             .get();
-        if (!vehicleDoc.exists) return null; // Si le véhicule a été supprimé
+        if (!vehicleDoc.exists) return null;
         final vData = vehicleDoc.data()!;
 
         String dateInfo = "";
         double price = 0;
         String clientId = "";
 
+        // Utilisation du parseur universel ici !
         if (type == "Location") {
-          final start = DateTime.parse(data['startDate']);
-          final end = DateTime.parse(data['endDate']);
+          final start = _parseDate(data['startDate']);
+          final end = _parseDate(data['endDate']);
           dateInfo =
               "${DateFormat('dd/MM/yyyy').format(start)} - ${DateFormat('dd/MM/yyyy').format(end)}";
           price = (data['totalPrice'] ?? 0).toDouble();
-          clientId = data['tenantId'];
+          clientId = data['tenantId'] ?? '';
         } else {
-          final created = DateTime.parse(data['createdAt']);
+          final created = _parseDate(data['createdAt']);
           dateInfo = "Initié le ${DateFormat('dd/MM/yyyy').format(created)}";
           price = (data['agreedPrice'] ?? 0).toDouble();
-          clientId = data['buyerId'];
+          clientId = data['buyerId'] ?? '';
         }
 
         return UnifiedHistoryItem(
@@ -90,12 +100,12 @@ class HistoryProvider with ChangeNotifier {
               : '',
           dateInfo: dateInfo,
           totalPrice: price,
-          originalModel: data, // Contient toutes les infos de la réservation
-          ownerId: data['ownerId'],
+          originalModel: data,
+          ownerId: data['ownerId'] ?? '',
           clientId: clientId,
-          createdAt: data['createdAt'] != null
-              ? DateTime.parse(data['createdAt'])
-              : DateTime.now(),
+          createdAt: _parseDate(
+            data['createdAt'],
+          ), // Utilisation du parseur ici aussi
           isMyListing: isMyListing,
         );
       }
@@ -117,7 +127,6 @@ class HistoryProvider with ChangeNotifier {
         if (item != null) tempOwner.add(item);
       }
 
-      // Tri du plus récent au plus ancien
       tempClient.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       tempOwner.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
@@ -132,7 +141,7 @@ class HistoryProvider with ChangeNotifier {
   }
 
   Future<void> updateBookingStatus({
-    required UnifiedHistoryItem item, // On passe l'objet complet
+    required UnifiedHistoryItem item,
     required String newStatus,
     required bool makeVehicleAvailable,
   }) async {
@@ -140,8 +149,6 @@ class HistoryProvider with ChangeNotifier {
       String collectionName = item.type == "Location"
           ? 'rental_bookings'
           : 'sale_bookings';
-
-      // 1. Préparer les champs à mettre à jour dans le dossier
       Map<String, dynamic> updates = {'status': newStatus};
 
       if (item.type == 'Location') {
@@ -150,7 +157,6 @@ class HistoryProvider with ChangeNotifier {
         if (newStatus == 'Véhicule Rendu') updates['checkOutValidated'] = true;
         if (newStatus == 'Terminé') updates['depositRefunded'] = true;
       } else {
-        // Vente
         if (newStatus == 'Fonds Validés') updates['fundsReceived'] = true;
         if (newStatus == 'Terminé') {
           updates['vehicleReceived'] = true;
@@ -158,33 +164,27 @@ class HistoryProvider with ChangeNotifier {
         }
       }
 
-      // 2. Mettre à jour le dossier de transaction
       await _firestore
           .collection(collectionName)
           .doc(item.bookingId)
           .update(updates);
 
-      // 3. Libérer le véhicule (Si location annulée ou terminée)
       if (makeVehicleAvailable) {
         await _firestore.collection('vehicles').doc(item.vehicleId).update({
           'isAvailable': true,
         });
       }
 
-      // 4. MAGIE : TRANSFERT DE PROPRIÉTÉ SI VENTE TERMINÉE !
       if (item.type == 'Vente' && newStatus == 'Terminé') {
         await _firestore.collection('vehicles').doc(item.vehicleId).update({
-          'ownerId': item.clientId, // L'acheteur devient le nouveau Boss !
-          'isForSale': false, // N'est plus à vendre
-          'isForRent': false, // On bloque la loc par précaution
-          'isAvailable':
-              false, // En attente que le nouveau proprio le configure
-          'validationStatus':
-              'En attente', // L'admin devra valider sa nouvelle configuration
+          'ownerId': item.clientId,
+          'isForSale': false,
+          'isForRent': false,
+          'isAvailable': false,
+          'validationStatus': 'En attente',
         });
       }
 
-      // 5. Rafraîchir l'historique localement
       await fetchUserHistory();
     } catch (e) {
       debugPrint("Erreur updateBookingStatus: $e");
