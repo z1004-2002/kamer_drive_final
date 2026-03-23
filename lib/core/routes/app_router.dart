@@ -5,6 +5,7 @@ import 'package:kamer_drive_final/features/booking/screens/rental_booking_screen
 import 'package:kamer_drive_final/features/booking/screens/sale_booking_screen.dart';
 import 'package:kamer_drive_final/features/home/screens/main_screen.dart';
 import 'package:kamer_drive_final/features/my_listings/screens/add_vehicle_screen.dart';
+import 'package:kamer_drive_final/features/my_listings/screens/edit_vehicle_screen.dart';
 import 'package:kamer_drive_final/features/my_listings/screens/my_listings_screen.dart';
 import 'package:kamer_drive_final/features/onboarding/screens/profiling_screen.dart';
 import 'package:kamer_drive_final/features/profile/screens/document_upload_screen.dart';
@@ -108,6 +109,14 @@ class AppRouter {
           // On prépare déjà la route pour l'écran de vente qu'on va créer
           final vehicle = state.extra as VehicleModel;
           return SaleBookingScreen(vehicle: vehicle);
+        },
+      ),
+      GoRoute(
+        path: '/edit_vehicle',
+        name: 'edit_vehicle',
+        builder: (context, state) {
+          final vehicle = state.extra as VehicleModel;
+          return EditVehicleScreen(vehicle: vehicle);
         },
       ),
     ],

@@ -485,16 +485,16 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
               ),
             ),
             // Menu d'actions (Modifier/Supprimer)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              itemBuilder: (context) => [
-                const PopupMenuItem(value: 'edit', child: Text("Modifier")),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Text("Supprimer", style: TextStyle(color: Colors.red)),
-                ),
-              ],
-            ),
+            // PopupMenuButton<String>(
+            //   icon: const Icon(Icons.more_vert),
+            //   itemBuilder: (context) => [
+            //     const PopupMenuItem(value: 'edit', child: Text("Modifier")),
+            //     const PopupMenuItem(
+            //       value: 'delete',
+            //       child: Text("Supprimer", style: TextStyle(color: Colors.red)),
+            //     ),
+            //   ],
+            // ),
           ],
         ),
       ),

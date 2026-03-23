@@ -3,6 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart'; // NOUVEAU: Requis pour a
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
+import 'package:kamer_drive_final/core/utils/snackbar_utils.dart';
+import 'package:kamer_drive_final/features/my_listings/providers/vehicle_provider.dart';
+import 'package:provider/provider.dart';
 import '../../../models/vehicle_model.dart';
 
 void showVehicleDetailsModal(
@@ -712,25 +715,146 @@ Widget _buildBottomActionArea(
             flex: 6,
             child: isMyVehicle
                 // SI C'EST MON VÉHICULE -> Bouton Modifier
-                ? ElevatedButton(
-                    onPressed: () {
-                      // TODO: Naviguer vers l'écran d'édition
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black87,
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
+                ? Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: IconButton(
+                          onPressed: () {
+                            // --- DEMANDE DE CONFIRMATION AVANT SUPPRESSION ---
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                title: const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Colors.red,
+                                    ),
+                                    SizedBox(width: 10),
+                                    Text(
+                                      "Supprimer l'annonce",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                content: const Text(
+                                  "Êtes-vous sûr de vouloir supprimer définitivement ce véhicule ? Cette action est irréversible et retirera le véhicule de la plateforme.",
+                                  style: TextStyle(
+                                    height: 1.4,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: const Text(
+                                      "Annuler",
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () async {
+                                      Navigator.pop(
+                                        ctx,
+                                      ); // 1. Ferme la boîte de confirmation
+                                      Navigator.pop(
+                                        context,
+                                      ); // 2. Ferme la modale du véhicule
+
+                                      // 3. Exécute la suppression dans Firebase
+                                      try {
+                                        await context
+                                            .read<VehicleProvider>()
+                                            .deleteVehicle(vehicle.id);
+                                        if (context.mounted) {
+                                          SnackbarUtils.showSuccess(
+                                            context,
+                                            "Le véhicule a été supprimé.",
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          // e.toString() va afficher le fameux "Exception: Impossible : Ce véhicule a des transactions en cours."
+                                          String errorMsg = e
+                                              .toString()
+                                              .replaceAll("Exception: ", "");
+                                          SnackbarUtils.showError(
+                                            context,
+                                            errorMsg,
+                                          );
+                                        }
+                                      }
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      "Oui, supprimer",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          icon: Icon(
+                            Icons.delete_outline,
+                            color: Colors.red.shade700,
+                          ),
+                          padding: const EdgeInsets.all(12),
+                        ),
                       ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      "Modifier",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(width: 10),
+
+                      // 2. BOUTON MODIFIER
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context); // Ferme la modale
+                            context.push(
+                              '/edit_vehicle',
+                              extra: vehicle,
+                            ); // Va à la page d'édition
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black87,
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            "Modifier",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   )
                 : isPrivate
                 // SI C'EST PRIVÉ -> Rien

@@ -130,5 +130,165 @@ class VehicleProvider with ChangeNotifier {
               .map((doc) => VehicleModel.fromJson(doc.data()))
               .toList(),
         );
+  } // --- METTRE À JOUR UN VÉHICULE ---
+
+  Future<bool> _hasActiveBookings(String vehicleId) async {
+    try {
+      // 1. Vérifier les locations actives
+      final rentQuery = await _firestore
+          .collection('rental_bookings')
+          .where('vehicleId', isEqualTo: vehicleId)
+          .where('status', whereIn: ['En attente', 'Confirmé', 'En cours'])
+          .get();
+
+      if (rentQuery.docs.isNotEmpty) return true;
+
+      // 2. Vérifier les ventes actives
+      final saleQuery = await _firestore
+          .collection('sale_bookings')
+          .where('vehicleId', isEqualTo: vehicleId)
+          .where('status', whereIn: ['Négociation', 'Fonds Validés'])
+          .get();
+
+      if (saleQuery.docs.isNotEmpty) return true;
+
+      return false; // Le véhicule est totalement libre
+    } catch (e) {
+      debugPrint("Erreur lors de la vérification des réservations : $e");
+      return true; // Par sécurité, on bloque si la vérification échoue
+    }
+  }
+
+  // --- METTRE À JOUR UN VÉHICULE (AVEC PHOTOS OPTIONNELLES) ---
+  Future<void> updateVehicleInfo(
+    String vehicleId,
+    Map<String, dynamic> updates, {
+    Map<String, File>? newImages,
+    Map<String, File>? newDocs,
+  }) async {
+    try {
+      bool isBusy = await _hasActiveBookings(vehicleId);
+      if (isBusy) {
+        throw Exception(
+          "Impossible : Ce véhicule a des transactions en cours.",
+        );
+      }
+
+      // --- 1. GESTION DES NOUVELLES IMAGES DU VÉHICULE ---
+      if (newImages != null && newImages.isNotEmpty) {
+        // On récupère le véhicule actuel pour avoir son tableau d'images
+        DocumentSnapshot doc = await _firestore
+            .collection('vehicles')
+            .doc(vehicleId)
+            .get();
+        List<dynamic> currentImages = doc.get('images') ?? [];
+        // On s'assure que le tableau a la bonne taille (5 images)
+        while (currentImages.length < 5) {
+          currentImages.add("");
+        }
+
+        // Fonction locale d'upload
+        Future<String> uploadToStorage(File file, String path) async {
+          TaskSnapshot snapshot = await FirebaseStorage.instance
+              .ref()
+              .child(path)
+              .putFile(file);
+          return await snapshot.ref.getDownloadURL();
+        }
+
+        // On remplace spécifiquement l'image au bon index
+        if (newImages.containsKey('front')) {
+          currentImages[0] = await uploadToStorage(
+            newImages['front']!,
+            'vehicles/$vehicleId/front.jpg',
+          );
+        }
+        if (newImages.containsKey('back')) {
+          currentImages[1] = await uploadToStorage(
+            newImages['back']!,
+            'vehicles/$vehicleId/back.jpg',
+          );
+        }
+        if (newImages.containsKey('left')) {
+          currentImages[2] = await uploadToStorage(
+            newImages['left']!,
+            'vehicles/$vehicleId/left.jpg',
+          );
+        }
+        if (newImages.containsKey('right')) {
+          currentImages[3] = await uploadToStorage(
+            newImages['right']!,
+            'vehicles/$vehicleId/right.jpg',
+          );
+        }
+        if (newImages.containsKey('interior')) {
+          currentImages[4] = await uploadToStorage(
+            newImages['interior']!,
+            'vehicles/$vehicleId/interior.jpg',
+          );
+        }
+
+        updates['images'] = currentImages;
+      }
+
+      // --- 2. GESTION DES NOUVEAUX DOCUMENTS ---
+      if (newDocs != null && newDocs.isNotEmpty) {
+        Future<String> uploadDoc(File file, String docName) async {
+          TaskSnapshot snapshot = await FirebaseStorage.instance
+              .ref()
+              .child('vehicles/$vehicleId/docs_$docName.jpg')
+              .putFile(file);
+          return await snapshot.ref.getDownloadURL();
+        }
+
+        if (newDocs.containsKey('plate')) {
+          updates['registrationPlateUrl'] = await uploadDoc(
+            newDocs['plate']!,
+            'plate',
+          );
+        }
+        if (newDocs.containsKey('registration')) {
+          updates['registrationDocumentUrl'] = await uploadDoc(
+            newDocs['registration']!,
+            'registration',
+          );
+        }
+        if (newDocs.containsKey('insurance')) {
+          updates['insuranceCertificateUrl'] = await uploadDoc(
+            newDocs['insurance']!,
+            'insurance',
+          );
+        }
+      }
+
+      updates['updatedAt'] = DateTime.now().toIso8601String();
+      updates['validationStatus'] =
+          "En attente"; // NOUVEAU : Si le proprio modifie, on repasse en attente de validation admin !
+
+      await _firestore.collection('vehicles').doc(vehicleId).update(updates);
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Erreur Update Vehicle: $e");
+      rethrow;
+    }
+  }
+
+  // --- SUPPRIMER UN VÉHICULE ---
+  Future<void> deleteVehicle(String vehicleId) async {
+    try {
+      // Vérification de sécurité !
+      bool isBusy = await _hasActiveBookings(vehicleId);
+      if (isBusy) {
+        throw Exception(
+          "Impossible : Ce véhicule a des transactions en cours. Terminez ou annulez-les d'abord.",
+        );
+      }
+
+      await _firestore.collection('vehicles').doc(vehicleId).delete();
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Erreur Delete Vehicle: $e");
+      rethrow;
+    }
   }
 }

@@ -102,16 +102,20 @@ class _SaleBookingScreenState extends State<SaleBookingScreen> {
       ).createSaleBooking(saleBooking);
 
       if (mounted) {
+        // 1. Rafraîchir les listes
+        context.read<HomeProvider>().fetchHomeData();
+        context.read<SearchProvider>().fetchAllVehicles();
+
+        // 2. Afficher le message de succès EN PREMIER
         SnackbarUtils.showSuccess(
           context,
           "Votre offre a été envoyée ! Le propriétaire vous contactera.",
         );
 
-        // --- NOUVEAU: Rafraîchir les listes ---
-        context.read<HomeProvider>().fetchHomeData();
-        context.read<SearchProvider>().fetchAllVehicles();
-
-        context.pop();
+        // 3. Attendre une demi-seconde avant de fermer la page
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) context.pop();
+        });
       }
     } catch (e) {
       if (mounted) {
