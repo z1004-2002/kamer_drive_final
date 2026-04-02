@@ -281,7 +281,7 @@ class _SignupFormState extends State<SignupForm> {
       await Provider.of<AuthProvider>(
         context,
         listen: false,
-      ).signup(signupData);
+      ).signup(signupData, context);
 
       if (mounted) {
         SnackbarUtils.showSuccess(context, "Compte créé avec succès !");

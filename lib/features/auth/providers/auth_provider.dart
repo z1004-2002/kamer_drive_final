@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:kamer_drive_final/features/notifications/providers/notification_provider.dart';
 import 'package:kamer_drive_final/features/profile/providers/profile_provider.dart';
 import 'package:kamer_drive_final/models/auth_model.dart';
+import 'package:kamer_drive_final/models/notification_model.dart';
 import 'package:kamer_drive_final/models/user_model.dart';
 import 'package:provider/provider.dart';
 
@@ -50,7 +52,7 @@ class AuthProvider with ChangeNotifier {
     return '/auth';
   }
 
-  Future<void> signup(SignupModel data) async {
+  Future<void> signup(SignupModel data, BuildContext context) async {
     try {
       // 1. Créer l'utilisateur dans Firebase Auth
       UserCredential userCredential = await _auth
@@ -58,7 +60,6 @@ class AuthProvider with ChangeNotifier {
             email: data.email,
             password: data.password,
           );
-
       String uid = userCredential.user!.uid;
 
       // 2. Sauvegarder les infos initiales dans Firestore
@@ -81,6 +82,20 @@ class AuthProvider with ChangeNotifier {
         'intents': [], // Liste vide par défaut
         'ownsVehicle': false, // False par défaut
       });
+      if (context.mounted) {
+        await Provider.of<NotificationProvider>(
+          context,
+          listen: false,
+        ).sendNotification(
+          targetUserId: uid,
+          title: "Bienvenue sur KamerDrive ! 🎉",
+          message:
+              "N'oubliez pas de compléter votre profil et d'ajouter une pièce d'identité pour pouvoir publier vos véhicules.",
+          type: NotificationType.info,
+          route:
+              '/profile', // L'utilisateur sera redirigé vers son profil en cliquant
+        );
+      }
     } on FirebaseAuthException catch (e) {
       if (e.code == 'email-already-in-use') {
         throw Exception('Cet email est déjà utilisé.');

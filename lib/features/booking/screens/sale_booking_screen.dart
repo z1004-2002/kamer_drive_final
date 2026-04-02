@@ -99,7 +99,7 @@ class _SaleBookingScreenState extends State<SaleBookingScreen> {
       await Provider.of<BookingProvider>(
         context,
         listen: false,
-      ).createSaleBooking(saleBooking);
+      ).createSaleBooking(saleBooking, context);
 
       if (mounted) {
         // 1. Rafraîchir les listes

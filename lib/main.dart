@@ -6,6 +6,7 @@ import 'package:kamer_drive_final/features/booking/providers/booking_provider.da
 import 'package:kamer_drive_final/features/history/providers/history_provider.dart';
 import 'package:kamer_drive_final/features/home/providers/home_provider.dart';
 import 'package:kamer_drive_final/features/my_listings/providers/vehicle_provider.dart';
+import 'package:kamer_drive_final/features/notifications/providers/notification_provider.dart';
 import 'package:kamer_drive_final/features/profile/providers/profile_provider.dart';
 import 'package:kamer_drive_final/features/search/provider/search_provider.dart';
 import 'package:provider/provider.dart';
@@ -24,6 +25,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => SearchProvider()),
         ChangeNotifierProvider(create: (_) => BookingProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       child: const KamerDriveApp(),
     ),

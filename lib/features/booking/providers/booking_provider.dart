@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:kamer_drive_final/features/notifications/providers/notification_provider.dart';
+import 'package:kamer_drive_final/models/notification_model.dart';
+import 'package:provider/provider.dart';
 import '../../../models/rental_booking_model.dart';
 import '../../../models/sale_booking_model.dart';
 import '../../../models/unified_history_item_model.dart';
@@ -26,13 +29,14 @@ class BookingProvider with ChangeNotifier {
       });
     } catch (e) {
       debugPrint("Erreur lors de la mise à jour de la disponibilité: $e");
-      // On ne throw pas d'exception ici pour ne pas bloquer la réservation
-      // si seule la mise à jour de disponibilité échoue.
     }
   }
 
   // --- 1. CRÉER UNE RÉSERVATION (LOCATION) ---
-  Future<void> createRentalBooking(RentalBookingModel booking) async {
+  Future<void> createRentalBooking(
+    RentalBookingModel booking,
+    BuildContext context,
+  ) async {
     try {
       if (_auth.currentUser == null) {
         throw Exception("Utilisateur non connecté.");
@@ -47,6 +51,21 @@ class BookingProvider with ChangeNotifier {
       // 2. Mettre le véhicule en indisponible
       await _setVehicleUnavailable(booking.vehicleId);
 
+      // 3. ENVOYER LA NOTIFICATION AU PROPRIÉTAIRE
+      if (context.mounted) {
+        await Provider.of<NotificationProvider>(
+          context,
+          listen: false,
+        ).sendNotification(
+          targetUserId: booking.ownerId,
+          title: "Nouvelle demande de location ! 🚗",
+          message:
+              "Un client souhaite louer votre véhicule du ${DateFormat('dd/MM/yyyy').format(booking.startDate)} au ${DateFormat('dd/MM/yyyy').format(booking.endDate)}.",
+          type: NotificationType.info,
+          route: '/history', // Redirige le propriétaire vers son historique
+        );
+      }
+
       notifyListeners();
     } catch (e) {
       debugPrint("Erreur createRentalBooking: $e");
@@ -55,7 +74,11 @@ class BookingProvider with ChangeNotifier {
   }
 
   // --- 2. CRÉER UNE OFFRE D'ACHAT (VENTE) ---
-  Future<void> createSaleBooking(SaleBookingModel booking) async {
+  // NOUVEAU : Ajout de BuildContext context
+  Future<void> createSaleBooking(
+    SaleBookingModel booking,
+    BuildContext context,
+  ) async {
     try {
       if (_auth.currentUser == null) {
         throw Exception("Utilisateur non connecté.");
@@ -67,16 +90,30 @@ class BookingProvider with ChangeNotifier {
           .doc(booking.id)
           .set(booking.toJson());
 
-      // 2. Mettre le véhicule en indisponible (Optionnel, selon ton workflow de vente)
-      // Si une offre bloque la vente aux autres, on le met indisponible.
+      // 2. Mettre le véhicule en indisponible
       await _setVehicleUnavailable(booking.vehicleId);
+
+      // 3. ENVOYER LA NOTIFICATION AU PROPRIÉTAIRE
+      if (context.mounted) {
+        await Provider.of<NotificationProvider>(
+          context,
+          listen: false,
+        ).sendNotification(
+          targetUserId: booking.ownerId,
+          title: "Nouvelle offre d'achat ! 💰",
+          message:
+              "Un client a fait une offre d'achat de ${booking.agreedPrice.toInt()} FCFA pour votre véhicule.",
+          type: NotificationType.success, // En vert pour une vente !
+          route: '/history',
+        );
+      }
 
       notifyListeners();
     } catch (e) {
       debugPrint("Erreur createSaleBooking: $e");
       throw Exception("Impossible d'envoyer l'offre d'achat.");
     }
-  } // --- 3. RÉCUPÉRER L'HISTORIQUE COMPLET ---
+  }
 
   Future<void> fetchUserHistory() async {
     final uid = _auth.currentUser?.uid;

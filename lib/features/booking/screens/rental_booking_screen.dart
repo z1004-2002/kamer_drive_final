@@ -108,7 +108,7 @@ class _RentalBookingScreenState extends State<RentalBookingScreen> {
       await Provider.of<BookingProvider>(
         context,
         listen: false,
-      ).createRentalBooking(booking);
+      ).createRentalBooking(booking, context);
 
       if (mounted) {
         // 1. Rafraîchir les listes

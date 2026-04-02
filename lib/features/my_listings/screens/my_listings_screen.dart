@@ -195,7 +195,13 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                             Icons.arrow_back_ios_new,
                             color: Colors.white,
                           ),
-                          onPressed: () => context.pop(),
+                          onPressed: () {
+                            if (context.canPop()) {
+                              context.pop();
+                            } else {
+                              context.go('/home');
+                            }
+                          },
                         ),
                         const SizedBox(width: 10),
                         const Text(

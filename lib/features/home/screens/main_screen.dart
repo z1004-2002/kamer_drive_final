@@ -1,63 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
-import 'package:kamer_drive_final/features/history/screens/history_screen.dart';
-import 'package:kamer_drive_final/features/profile/screens/profile_screen.dart';
-import 'package:kamer_drive_final/features/search/screens/search_screen.dart';
-import 'package:kamer_drive_final/models/user_model.dart';
-import 'home_screen.dart';
+import 'package:kamer_drive_final/features/notifications/providers/notification_provider.dart';
+import 'package:provider/provider.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({Key? key}) : super(key: key);
+  // GoRouter va nous passer cet objet qui contient l'index actuel et le body
+  final StatefulNavigationShell navigationShell;
+
+  const MainScreen({Key? key, required this.navigationShell}) : super(key: key);
 
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _navIndex = 0;
-
-  // Un faux utilisateur pour le MVP (A remplacer par l'utilisateur connecté via Provider)
-  final user = UserModel(
-    id: "1",
-    firstName: 'Francis',
-    lastName: '2G',
-    email: 'f2g@kamerdrive.com',
-    phone: '690000000',
-    avatarUrl: 'https://picsum.photos/200',
-    address: '',
-    idDocuments: {},
-    reviews: [],
-    isFirstConnection: false,
-    hasCompletedProfiling: true,
-    intents: [],
-    ownsVehicle: false,
-    createdAt: DateTime.now(),
-  );
-
-  // Fonction pour changer d'onglet
-  void navigateToTab(int index) {
-    // Si on clique sur l'élément du milieu (index 2), on ne fait rien
-    if (index == 2) return;
-
-    setState(() {
-      _navIndex = index;
-    });
-  }
-
-  // La liste des pages pour le IndexedStack
-  late final List<Widget> _pages;
-
   @override
   void initState() {
     super.initState();
-    _pages = [
-      HomeScreen(onNavigateToSearch: () => navigateToTab(1)),
-      const SearchScreen(),
-      const SizedBox.shrink(), // Dummy pour l'index 2 (le bouton +)
-      const HistoryScreen(),
-      ProfileScreen(),
-    ];
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<NotificationProvider>().initPushNotifications();
+    });
+  }
+
+  void _onTap(BuildContext context, int index) {
+    // On ignore l'index 2 car c'est l'emplacement visuel du bouton +
+    if (index == 2) return;
+
+    // GoRouter gère le changement d'onglet !
+    // initialLocation: true permet de remonter en haut de la page si on clique sur l'onglet déjà actif
+    widget.navigationShell.goBranch(
+      index,
+      initialLocation: index == widget.navigationShell.currentIndex,
+    );
   }
 
   @override
@@ -66,8 +41,8 @@ class _MainScreenState extends State<MainScreen> {
       backgroundColor: kBackgroundColor,
 
       // --- CORPS DE LA PAGE ---
-      // IndexedStack permet de garder l'état de la page (ex: position du scroll)
-      body: IndexedStack(index: _navIndex, children: _pages),
+      // GoRouter injecte automatiquement la bonne page ici (avec son propre IndexedStack interne)
+      body: widget.navigationShell,
 
       // --- BOUTON CENTRAL (FAB) ---
       floatingActionButton: SizedBox(
@@ -76,16 +51,12 @@ class _MainScreenState extends State<MainScreen> {
         child: FloatingActionButton(
           backgroundColor: kPrimaryColor,
           elevation: 5,
-          shape: const CircleBorder(), // Parfaitement rond
+          shape: const CircleBorder(),
           onPressed: () async {
-            // 1. On navigue vers la page et on ATTEND son retour
             final result = await context.push('/my_listings');
-
-            // 2. Si le retour nous dit d'aller au profil...
             if (result == 'goToProfile') {
-              setState(() {
-                _navIndex = 4; // On bascule directement sur l'onglet Profil !
-              });
+              // Si on doit aller au profil, on demande à GoRouter d'ouvrir la branche 4 !
+              widget.navigationShell.goBranch(4);
             }
           },
           child: const Icon(Icons.add, size: 35, color: Colors.white),
@@ -95,12 +66,12 @@ class _MainScreenState extends State<MainScreen> {
 
       // --- BARRE DE NAVIGATION ---
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _navIndex,
-        onTap: navigateToTab,
+        currentIndex: widget.navigationShell.currentIndex,
+        onTap: (index) => _onTap(context, index),
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
         selectedItemColor: kPrimaryColor,
-        unselectedItemColor: Colors.grey, // Remplacer par kTextGrey si tu l'as
+        unselectedItemColor: Colors.grey,
         selectedFontSize: 12,
         unselectedFontSize: 12,
         showUnselectedLabels: true,
@@ -110,13 +81,10 @@ class _MainScreenState extends State<MainScreen> {
             label: "Accueil",
           ),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: "Recherche"),
-
-          // --- ELEMENT INVISIBLE (DUMMY) ---
           BottomNavigationBarItem(
             icon: Icon(Icons.add, color: Colors.transparent),
             label: "",
           ),
-
           BottomNavigationBarItem(
             icon: Icon(Icons.history),
             label: "Historique",

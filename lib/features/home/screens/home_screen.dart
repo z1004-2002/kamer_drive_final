@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kamer_drive_final/core/constants/colors.dart';
+import 'package:kamer_drive_final/features/notifications/providers/notification_provider.dart';
 import 'package:kamer_drive_final/shared/widgets/name.dart';
 import 'package:kamer_drive_final/shared/widgets/vehicle_details_modal.dart';
 import 'package:provider/provider.dart';
@@ -206,6 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // --- LE NOUVEAU HEADER MAGIQUE ---
   Widget _buildFixedHeader(String userName, VoidCallback onSearch) {
+    final int unreadCount = context.watch<NotificationProvider>().unreadCount;
     return SizedBox(
       height:
           215, // La hauteur totale laisse de la place pour la barre de recherche
@@ -259,27 +262,68 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: const Icon(
-                        Icons.notifications_none,
-                        color: Colors.white,
+                    // --- LA CLOCHE DE NOTIFICATION MODIFIÉE ---
+                    GestureDetector(
+                      onTap: () {
+                        // Ouvre la page des notifications
+                        context.push('/notifications');
+                      },
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: const Icon(
+                              Icons.notifications_none,
+                              color: Colors.white,
+                            ),
+                          ),
+
+                          // LE BADGE ROUGE (S'affiche uniquement s'il y a des notifs)
+                          if (unreadCount > 0)
+                            Positioned(
+                              right: -2,
+                              top: -2,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.redAccent,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 18,
+                                  minHeight: 18,
+                                ),
+                                child: Text(
+                                  unreadCount > 9
+                                      ? "9+"
+                                      : unreadCount.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
+                    // ------------------------------------------
                   ],
                 ),
               ),
             ),
           ),
 
-          // LA BARRE DE RECHERCHE DÉPLACÉE ICI
+          // LA BARRE DE RECHERCHE ICI
           Positioned(
-            bottom:
-                5, // Chevauche parfaitement la bordure arrondie du fond vert
+            bottom: 5,
             left: 20,
             right: 20,
             child: GestureDetector(
